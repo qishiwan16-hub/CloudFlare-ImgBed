@@ -200,6 +200,7 @@ img{display:block;max-width:100%}
 .gp-select-bar-inner{display:flex;gap:12px;background:#fff;border-radius:16px;padding:6px;box-shadow:0 -2px 20px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);border:1px solid #f0ede9}
 .gp-sel-btn{flex:1;padding:14px 0;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center}
 .gp-sel-btn.delete{background:#2c2c2c;color:#fff}
+.gp-sel-btn.selectall{background:#fff;color:#2c2c2c;border:1.5px solid #2c2c2c}
 .gp-sel-btn.cancel{background:#f5f2ee;color:#6a6a6a}
 
 /* GP Album grid */
@@ -352,6 +353,32 @@ img{display:block;max-width:100%}
 .ap-acard .aac-color{height:3px;border-radius:0 0 14px 14px}
 /* FAB */
 .ap-fab{display:none !important}
+.ap-select-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;padding:16px 20px env(safe-area-inset-bottom,12px);background:rgba(248,246,243,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid #ede9e3}
+.ap-select-bar.show{display:block}
+.ap-select-bar .gp-select-bar-inner{display:flex;gap:10px;max-width:460px;margin:0 auto}
+.ap-acard.selected{outline:3px solid #2c2c2c;outline-offset:-3px;opacity:.75}
+.ap-acard .aac-sel{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.15);display:none;align-items:center;justify-content:center;z-index:3}
+.album-select-mode .ap-acard .aac-sel{display:flex}
+.ap-acard.selected .aac-sel{background:#2c2c2c;border-color:#2c2c2c}
+.ap-acard.selected .aac-sel svg{opacity:1}
+/* Album Settings Overlay */
+.album-settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.album-settings-overlay.show{display:flex}
+.album-settings-panel{width:100%;max-width:460px;background:#f8f6f3;border-radius:24px 24px 0 0;padding:20px 24px env(safe-area-inset-bottom,20px);max-height:80vh;overflow-y:auto;animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.as-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.as-title{font-size:18px;font-weight:700;color:#1a1a1a}
+.as-close{width:32px;height:32px;border-radius:50%;background:#f0ede8;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;color:#888}
+.as-cover{width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#f0ede9;margin-bottom:20px}
+.as-cover img{width:100%;height:100%;object-fit:cover}
+.as-actions{display:flex;flex-direction:column;gap:4px}
+.as-action-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:#fff;border:none;font-size:14px;font-weight:500;color:#2c2c2c;cursor:pointer;transition:all .15s;text-align:left;width:100%}
+.as-action-item:active{background:#f0ede9;transform:scale(.98)}
+.as-action-item svg{flex-shrink:0;color:#888}
+.as-action-item.warn{color:#d4a017}
+.as-action-item.warn svg{color:#d4a017}
+.as-action-item.danger{color:#c0392b}
+.as-action-item.danger svg{color:#c0392b}
 /* Category filter chips */
 .ap-cat-filter{display:flex;gap:8px;padding:8px 20px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .ap-cat-filter::-webkit-scrollbar{display:none}
@@ -899,6 +926,7 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
   </div>
 
   <div class="gp-select-bar" id="gpSelectBar"><div class="gp-select-bar-inner">
+    <button class="gp-sel-btn selectall" id="gpSelectAllBtn">全选</button>
     <button class="gp-sel-btn delete" id="gpDeleteBtn">删除</button>
     <button class="gp-sel-btn cancel" id="gpCancelBtn">取消</button>
   </div></div>
@@ -947,7 +975,30 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
     <div class="ap-tabs" id="apTabs"></div>
     <div class="ap-content" id="apContent"></div>
   </div>
+  <div class="ap-select-bar" id="apSelectBar"><div class="gp-select-bar-inner">
+    <button class="gp-sel-btn selectall" id="apSelectAllBtn">全选</button>
+    <button class="gp-sel-btn delete" id="apDeleteSelBtn">删除</button>
+    <button class="gp-sel-btn cancel" id="apCancelSelBtn">取消</button>
+  </div></div>
   <button class="ap-fab" id="apFab" onclick="openAlbumDialog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+
+<!-- ALBUM SETTINGS OVERLAY -->
+<div class="album-settings-overlay" id="albumSettingsOverlay" onclick="if(event.target===this)closeAlbumSettings()">
+  <div class="album-settings-panel">
+    <div class="as-header">
+      <div class="as-title" id="asTitle">相册设置</div>
+      <button class="as-close" onclick="closeAlbumSettings()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="as-cover" id="asCover"></div>
+    <div class="as-actions">
+      <button class="as-action-item" onclick="asRename()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>重命名</button>
+      <button class="as-action-item" onclick="asChangeCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>更换封面</button>
+      <button class="as-action-item" onclick="asDeleteByType()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>按类型删除</button>
+      <button class="as-action-item warn" onclick="asClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空相册</button>
+      <button class="as-action-item danger" onclick="asDelete()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>删除相册</button>
+    </div>
+  </div>
 </div>
 
 <!-- FLIP CARD OVERLAY -->
@@ -1031,14 +1082,14 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
 <!-- RESULT SHEET -->
 <div class="result-overlay" id="resultOverlay"><div class="result-sheet">
   <div class="result-sheet-handle"></div>
-  <h3>🎉 上传成功</h3>
+  <h3><svg viewBox="0 0 24 24" fill="none" stroke="#6a9a6a" stroke-width="2" stroke-linecap="round" width="20" height="20" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>上传成功</h3>
   <div id="resultLinks"></div>
 </div></div>
 
 <!-- SETTINGS -->
 <div class="settings-overlay" id="settingsOverlay"><div class="settings-sheet">
   <div class="settings-sheet-handle"></div>
-  <h3>⚙ 自定义设置</h3>
+  <h3><svg viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" width="20" height="20" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>自定义设置</h3>
   <div class="setting-group"><label>名称</label><input type="text" id="setName" placeholder="我的图床"></div>
   <div class="setting-group"><label>签名</label><input type="text" id="setBio" placeholder="把喜欢的瞬间，留在这里。"></div>
   <div class="setting-group">
@@ -1840,10 +1891,10 @@ async function handleFiles(files){
     try{
       bar.style.width='30%';const fd=new FormData();fd.append('file',file);bar.style.width='60%';
       const resp=await fetch(API.upload,{method:'POST',body:fd});bar.style.width='90%';
-      if(resp.ok){const data=await resp.json();bar.style.width='100%';st.textContent='✓ 上传成功';st.style.color='#6a9a6a';
+      if(resp.ok){const data=await resp.json();bar.style.width='100%';st.textContent='上传成功';st.style.color='#6a9a6a';
         if(data&&data[0]){const src=data[0].src,fullUrl=location.origin+src;results.push({name:file.name,src,fullUrl});allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN')});}
       }else throw new Error('HTTP '+resp.status);
-    }catch(err){bar.style.width='100%';bar.style.background='#e8a0a0';st.textContent='✗ '+err.message;st.style.color='#c06060';}
+    }catch(err){bar.style.width='100%';bar.style.background='#e8a0a0';st.textContent='失败: '+err.message;st.style.color='#c06060';}
   }
   if(results.length>0){saveUserImages();showResults(results);renderHomeGallery();renderHomeAlbums();document.getElementById('statFiles').textContent=allImages.length;}
   setTimeout(()=>{pw.classList.remove('active');pw.innerHTML='';},3000);
@@ -1947,6 +1998,7 @@ function initGalleryPage(){
   document.getElementById('gpManageBtn').addEventListener('click',()=>{if(selectMode)exitSelectMode();else enterSelectMode();});
   document.getElementById('gpCancelBtn').addEventListener('click',exitSelectMode);
   document.getElementById('gpDeleteBtn').addEventListener('click',deleteSelected);
+  document.getElementById('gpSelectAllBtn').addEventListener('click',selectAll);
   document.getElementById('albumViewAll').addEventListener('click',()=>openAlbumPage());
 }
 function openGalleryPage(){document.getElementById('homePage').style.display='none';document.getElementById('galleryPage').classList.add('active');renderGalleryPage();window.scrollTo(0,0);}
@@ -2057,7 +2109,23 @@ function toggleSelect(item){
   else{selectedSet.add(idx);document.querySelectorAll(`.gp-img-item[data-idx="${idx}"]`).forEach(el=>el.classList.add('selected'));}
   updateSelectCount();
 }
-function updateSelectCount(){document.getElementById('gpDeleteBtn').textContent=selectedSet.size>0?`删除 (${selectedSet.size})`:'删除';}
+function updateSelectCount(){
+  document.getElementById('gpDeleteBtn').textContent=selectedSet.size>0?`删除 (${selectedSet.size})`:'删除';
+  document.getElementById('gpSelectAllBtn').textContent=selectedSet.size===allImages.length?'取消全选':'全选';
+}
+function selectAll(){
+  if(!selectMode)enterSelectMode();
+  if(selectedSet.size===allImages.length){
+    // deselect all
+    selectedSet.clear();
+    document.querySelectorAll('.gp-img-item.selected').forEach(el=>el.classList.remove('selected'));
+  }else{
+    // select all
+    allImages.forEach((_,i)=>selectedSet.add(String(i)));
+    document.querySelectorAll('.gp-img-item').forEach(el=>el.classList.add('selected'));
+  }
+  updateSelectCount();
+}
 function deleteSelected(){
   if(!selectedSet.size){showToast('请先选择图片');return;}
   const count=selectedSet.size;
@@ -2078,12 +2146,16 @@ const albumCategories=['all','\u98ce\u666f','\u4eba\u7269','\u7f8e\u98df','\u65c
 
 function initAlbumPage(){
   document.getElementById('apBackBtn').addEventListener('click',()=>{
+    if(albumSelectMode){exitAlbumSelectMode();return;}
     if(apView==='detail'){apView='list';renderAlbumPage();return;}
     closeAlbumPage();
   });
   document.getElementById('apPrev').addEventListener('click',()=>{if(currentAlbumIdx>0){currentAlbumIdx--;renderAlbumDetail();}});
   document.getElementById('apNext').addEventListener('click',()=>{if(currentAlbumIdx<allAlbums.length-1){currentAlbumIdx++;renderAlbumDetail();}});
   document.getElementById('apSearchBtn').addEventListener('click',()=>apSearch());
+  document.getElementById('apCancelSelBtn').addEventListener('click',exitAlbumSelectMode);
+  document.getElementById('apDeleteSelBtn').addEventListener('click',deleteSelectedAlbums);
+  document.getElementById('apSelectAllBtn').addEventListener('click',selectAllAlbums);
   // Touch swipe on detail
   const track=document.getElementById('apTrack');
   let sx=0,dx=0;
@@ -2158,10 +2230,75 @@ function renderAlbumList(){
   if(!filtered.length){grid.innerHTML='<div class="ap-content-empty" style="grid-column:1/-1">\u6ca1\u6709\u5339\u914d\u7684\u76f8\u518c</div>';return;}
   grid.innerHTML=`<div class="ap-acard" onclick="openAlbumDialog()" style="background:transparent;box-shadow:none"><div class="aac-thumb" style="background:#f0ede9;display:flex;align-items:center;justify-content:center;border:2px dashed #e0dbd5;border-radius:14px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c8bfb6" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div><div class="aac-info"><div class="aac-name" style="color:#b0a89f">新建相册</div></div></div>`+filtered.map(a=>{
     const ri=allAlbums.indexOf(a);
-    return `<div class="ap-acard" onclick="apOpenDetail(${ri})"><div class="aac-thumb">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f0ede9"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}${a.category?`<div class="aac-cat">${a.category}</div>`:''}</div><div class="aac-info"><div class="aac-name">${a.name}</div><div class="aac-cnt">${a.images.length} 张</div></div>${a.color?`<div class="aac-color" style="background:${a.color}"></div>`:''}</div>`;
+    return `<div class="ap-acard" data-ri="${ri}" onclick="albumCardClick(${ri})" ontouchstart="albumCardTouchStart(event,${ri})" ontouchend="albumCardTouchEnd(event)" ontouchmove="albumCardTouchCancel()"><div class="aac-thumb" style="position:relative">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f0ede9"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}${a.category?`<div class="aac-cat">${a.category}</div>`:''}<div class="aac-sel"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="aac-info"><div class="aac-name">${a.name}</div><div class="aac-cnt">${a.images.length} 张</div></div>${a.color?`<div class="aac-color" style="background:${a.color}"></div>`:''}</div>`;
   }).join('');
 }
 function apFilterCat(cat){apCatFilter=cat;renderAlbumList();}
+let albumSelectMode=false, albumSelectedSet=new Set();
+
+function enterAlbumSelectMode(){
+  albumSelectMode=true;albumSelectedSet.clear();
+  document.getElementById('albumPage').classList.add('album-select-mode');
+  document.getElementById('apSelectBar').classList.add('show');
+  updateAlbumSelectCount();
+}
+function exitAlbumSelectMode(){
+  albumSelectMode=false;albumSelectedSet.clear();
+  document.getElementById('albumPage').classList.remove('album-select-mode');
+  document.getElementById('apSelectBar').classList.remove('show');
+  document.querySelectorAll('.ap-acard.selected').forEach(el=>el.classList.remove('selected'));
+}
+function toggleAlbumSelect(ri){
+  const el=document.querySelector(`.ap-acard[data-ri="${ri}"]`);
+  if(!el)return;
+  if(albumSelectedSet.has(ri)){albumSelectedSet.delete(ri);el.classList.remove('selected');}
+  else{albumSelectedSet.add(ri);el.classList.add('selected');}
+  updateAlbumSelectCount();
+}
+function updateAlbumSelectCount(){
+  document.getElementById('apDeleteSelBtn').textContent=albumSelectedSet.size>0?`删除 (${albumSelectedSet.size})`:'删除';
+  const total=document.querySelectorAll('.ap-acard[data-ri]').length;
+  document.getElementById('apSelectAllBtn').textContent=albumSelectedSet.size===total?'取消全选':'全选';
+}
+function selectAllAlbums(){
+  if(!albumSelectMode)enterAlbumSelectMode();
+  const cards=document.querySelectorAll('.ap-acard[data-ri]');
+  if(albumSelectedSet.size===cards.length){
+    albumSelectedSet.clear();cards.forEach(c=>c.classList.remove('selected'));
+  }else{
+    cards.forEach(c=>{const ri=parseInt(c.dataset.ri);albumSelectedSet.add(ri);c.classList.add('selected');});
+  }
+  updateAlbumSelectCount();
+}
+function deleteSelectedAlbums(){
+  if(!albumSelectedSet.size){showToast('请先选择相册');return;}
+  const count=albumSelectedSet.size;
+  // userAlbums index = allAlbums index - 2 (skip "全部" and "最近上传")
+  const toDelete=[...albumSelectedSet].map(ri=>ri-2).filter(i=>i>=0).sort((a,b)=>b-a);
+  toDelete.forEach(i=>{if(i<userAlbums.length)userAlbums.splice(i,1);});
+  saveUserAlbums();
+  exitAlbumSelectMode();
+  refreshAlbumData();renderAlbumList();renderHomeAlbums();
+  showToast(`已删除 ${count} 个相册`);
+}
+let albumLpTimer=null,albumLpMoved=false;
+function albumCardClick(ri){
+  if(albumSelectMode){toggleAlbumSelect(ri);return;}
+  apOpenDetail(ri);
+}
+function albumCardTouchStart(e,ri){
+  albumLpMoved=false;
+  albumLpTimer=setTimeout(()=>{
+    if(!albumLpMoved){
+      e.preventDefault();
+      if(!albumSelectMode)enterAlbumSelectMode();
+      toggleAlbumSelect(ri);
+    }
+  },500);
+}
+function albumCardTouchEnd(e){clearTimeout(albumLpTimer);}
+function albumCardTouchCancel(){albumLpMoved=true;clearTimeout(albumLpTimer);}
+
 function apOpenDetail(idx){
   currentAlbumIdx=idx; apView='detail'; apTabIdx=0;
   renderAlbumPage(); window.scrollTo(0,0);
@@ -2178,7 +2315,7 @@ function renderAlbumDetail(){
     if(i===currentAlbumIdx) cls+=' active';
     else if(Math.abs(i-currentAlbumIdx)===1) cls+=' near';
     const inner=a.cover?`<img src="${a.cover}" alt="${a.name}" loading="lazy">`:`<div class="ap-card-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>${a.name}</span></div>`;
-    ch+=`<div class="${cls}" onclick="apGoTo(${i})">${inner}</div>`;
+    ch+=`<div class="${cls}" onclick="${i===currentAlbumIdx?'openAlbumSettings()':'apGoTo('+i+')'}">${inner}</div>`;
   });
   track.innerHTML=ch;
   requestAnimationFrame(()=>{
@@ -2361,6 +2498,104 @@ function apCopyAllLinks(){
   navigator.clipboard.writeText(text).then(()=>showToast('已复制 '+links.length+' 条链接')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
     showToast('已复制 '+links.length+' 条链接');
+  });
+}
+
+// ===== ALBUM SETTINGS =====
+function openAlbumSettings(){
+  const album=allAlbums[currentAlbumIdx];
+  if(!album)return;
+  document.getElementById('asTitle').textContent=album.name+' 设置';
+  const coverEl=document.getElementById('asCover');
+  coverEl.innerHTML=album.cover?`<img src="${album.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
+  document.getElementById('albumSettingsOverlay').classList.add('show');
+}
+function closeAlbumSettings(){document.getElementById('albumSettingsOverlay').classList.remove('show');}
+
+function getUserAlbumIdx(){
+  // userAlbums index = currentAlbumIdx - 2 (skip "全部" and "最近上传")
+  return currentAlbumIdx - 2;
+}
+
+function asRename(){
+  const ui=getUserAlbumIdx();
+  if(ui<0||ui>=userAlbums.length){showToast('系统相册无法重命名');return;}
+  const old=userAlbums[ui].name;
+  gdShow({title:'重命名相册',desc:'当前名称: '+old,input:true,inputValue:old,confirm:'确定',cancel:'取消',
+    onConfirm:(val)=>{
+      if(val&&val.trim()){userAlbums[ui].name=val.trim();saveUserAlbums();refreshAlbumData();renderAlbumDetail();closeAlbumSettings();showToast('已重命名');}
+    }
+  });
+}
+function asChangeCover(){
+  const album=allAlbums[currentAlbumIdx];
+  if(!album.images.length){showToast('相册没有图片');return;}
+  closeAlbumSettings();
+  gdShow({title:'选择封面',desc:'点击选择一张图片作为封面',albumPicker:true,
+    albums:album.images.map(img=>({name:img.name,cover:img.src,count:0,selected:img.src===album.cover})),
+    confirm:'确定',cancel:'取消',
+    onConfirm:(_,__,selectedIdxs)=>{
+      if(selectedIdxs.length>0){
+        const ui=getUserAlbumIdx();
+        if(ui>=0&&ui<userAlbums.length){
+          userAlbums[ui].coverSrc=album.images[selectedIdxs[0]].src;
+          saveUserAlbums();refreshAlbumData();renderAlbumDetail();
+          showToast('封面已更换');
+        }
+      }
+    }
+  });
+}
+function asDeleteByType(){
+  const album=allAlbums[currentAlbumIdx];
+  const ui=getUserAlbumIdx();
+  if(ui<0){showToast('系统相册无法修改');return;}
+  const types={};
+  album.images.forEach(img=>{const ext=(img.name.split('.').pop()||'other').toLowerCase();if(!types[ext])types[ext]=0;types[ext]++;});
+  const typeList=Object.entries(types).map(([ext,cnt])=>({name:ext.toUpperCase()+' ('+cnt+'张)',ext}));
+  gdShow({title:'按类型删除',desc:'选择要删除的文件类型',albumPicker:true,
+    albums:typeList.map(t=>({name:t.name,count:0,selected:false})),
+    confirm:'删除选中类型',cancel:'取消',
+    onConfirm:(_,__,selectedIdxs)=>{
+      if(!selectedIdxs.length){showToast('未选择任何类型');return;}
+      const delExts=selectedIdxs.map(i=>typeList[i].ext);
+      const before=userAlbums[ui].imageIdxs?.length||0;
+      userAlbums[ui].imageIdxs=(userAlbums[ui].imageIdxs||[]).filter(idx=>{
+        const img=allImages[idx];
+        if(!img)return false;
+        const ext=(img.name.split('.').pop()||'other').toLowerCase();
+        return !delExts.includes(ext);
+      });
+      const removed=before-(userAlbums[ui].imageIdxs?.length||0);
+      saveUserAlbums();refreshAlbumData();renderAlbumDetail();
+      showToast('已删除 '+removed+' 个文件');
+    }
+  });
+}
+function asClear(){
+  const ui=getUserAlbumIdx();
+  if(ui<0){showToast('系统相册无法清空');return;}
+  gdShow({title:'清空相册',desc:'确定要清空「'+allAlbums[currentAlbumIdx].name+'」中的所有图片吗？这不会删除原始文件。',
+    confirm:'清空',cancel:'取消',
+    onConfirm:()=>{
+      userAlbums[ui].imageIdxs=[];
+      saveUserAlbums();refreshAlbumData();renderAlbumDetail();closeAlbumSettings();
+      showToast('相册已清空');
+    }
+  });
+}
+function asDelete(){
+  const ui=getUserAlbumIdx();
+  if(ui<0){showToast('系统相册无法删除');return;}
+  gdShow({title:'删除相册',desc:'确定要删除「'+allAlbums[currentAlbumIdx].name+'」吗？这不会删除原始文件。',
+    confirm:'删除',cancel:'取消',
+    onConfirm:()=>{
+      userAlbums.splice(ui,1);
+      saveUserAlbums();refreshAlbumData();
+      apView='list';renderAlbumPage();closeAlbumSettings();
+      renderHomeAlbums();
+      showToast('相册已删除');
+    }
   });
 }
 
