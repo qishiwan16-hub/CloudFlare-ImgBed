@@ -392,6 +392,20 @@ img{display:block;max-width:100%}
 .as-action-item.warn svg{color:#d4a017}
 .as-action-item.danger{color:#c0392b}
 .as-action-item.danger svg{color:#c0392b}
+/* Image Cropper */
+.crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:none;flex-direction:column}
+.crop-overlay.show{display:flex}
+.crop-panel{width:100%;height:100%;display:flex;flex-direction:column}
+.crop-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;flex-shrink:0}
+.crop-cancel,.crop-done{background:none;border:none;font-size:15px;font-weight:600;cursor:pointer;padding:8px 4px}
+.crop-cancel{color:#aaa}
+.crop-done{color:#6a9a6a}
+.crop-title{color:#fff;font-size:15px;font-weight:600}
+.crop-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;touch-action:none}
+.crop-canvas-wrap canvas{max-width:100%;max-height:100%}
+.crop-tools{display:flex;justify-content:center;gap:20px;padding:16px 0 env(safe-area-inset-bottom,24px);flex-shrink:0}
+.crop-tool{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:all .15s}
+.crop-tool:active{background:rgba(255,255,255,.25);transform:scale(.92)}
 /* Category filter chips */
 .ap-cat-filter{display:flex;gap:8px;padding:8px 20px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .ap-cat-filter::-webkit-scrollbar{display:none}
@@ -559,6 +573,63 @@ body.dark .bio-text,body.dark .bio-tag{color:#a09890}
 body.dark .bio-tag{background:#2a2826}
 body.dark .upload-area{background:#2a2826;border-color:#3a3632}
 body.dark .upload-area:hover{background:#302e2a;border-color:#4a4640}
+/* Tool entry */
+.tool-entry{display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px 16px;background:#faf8f6;border-radius:12px;cursor:pointer;transition:all .2s;font-size:13px;font-weight:500;color:#6a6a6a}
+.tool-entry:active{background:#f0ede8;transform:scale(.98)}
+body.dark .tool-entry{background:#2a2826;color:#aaa}
+/* Image Compressor */
+.comp-overlay{position:fixed;inset:0;background:#f8f6f3;z-index:190;display:none;flex-direction:column;overflow-y:auto}
+.comp-overlay.show{display:flex}
+body.dark .comp-overlay{background:#1a1a1a}
+.comp-panel{max-width:460px;width:100%;margin:0 auto;padding:0 16px}
+.comp-header{display:flex;align-items:center;justify-content:space-between;padding:14px 0;position:sticky;top:0;background:inherit;z-index:2}
+.comp-back{background:none;border:none;cursor:pointer;color:#666;padding:4px}
+body.dark .comp-back{color:#aaa}
+.comp-title{font-size:15px;font-weight:700;color:#2c2c2c}
+body.dark .comp-title{color:#e8e4df}
+.comp-upload-area{border:2px dashed #e0dbd5;border-radius:16px;padding:40px 24px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .25s;margin-bottom:16px}
+.comp-upload-area:active{border-color:#a09488;background:#f0ede8}
+body.dark .comp-upload-area{border-color:#3a3632}
+.comp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.comp-stat{background:#fff;border-radius:12px;padding:12px 10px;text-align:center;border:1.5px solid #e8e4df}
+body.dark .comp-stat{background:#2a2826;border-color:#3a3632}
+.comp-stat-label{font-size:9px;font-weight:700;letter-spacing:1px;color:#b0a89f;text-transform:uppercase}
+.comp-stat-num{font-size:16px;font-weight:800;color:#2c2c2c;margin-top:4px}
+body.dark .comp-stat-num{color:#e8e4df}
+.comp-field{margin-bottom:14px}
+.comp-field label{display:block;font-size:12px;font-weight:600;color:#6a6a6a;margin-bottom:6px}
+body.dark .comp-field label{color:#aaa}
+.comp-field select{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid #e0dbd5;background:#fff;font-size:13px;color:#2c2c2c;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:16px}
+body.dark .comp-field select{background-color:#2a2826;border-color:#3a3632;color:#e8e4df}
+.comp-quality-row{display:flex;align-items:center;gap:12px}
+.comp-quality-row input[type=range]{flex:1;height:6px;-webkit-appearance:none;appearance:none;background:#e0dbd5;border-radius:3px;outline:none}
+.comp-quality-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#2c2c2c;cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+body.dark .comp-quality-row input[type=range]{background:#3a3632}
+body.dark .comp-quality-row input[type=range]::-webkit-slider-thumb{background:#e8e4df;border-color:#333}
+.comp-quality-row span{font-size:14px;font-weight:700;color:#2c2c2c;min-width:40px;text-align:right}
+body.dark .comp-quality-row span{color:#e8e4df}
+.comp-actions{display:flex;gap:8px;margin:16px 0}
+.comp-btn{flex:1;padding:12px 0;border-radius:10px;border:1.5px solid #e0dbd5;background:#fff;font-size:12px;font-weight:600;color:#6a6a6a;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
+.comp-btn:active{transform:scale(.97)}
+.comp-btn.primary{background:#2c2c2c;color:#fff;border-color:#2c2c2c}
+body.dark .comp-btn{background:#2a2826;border-color:#3a3632;color:#aaa}
+body.dark .comp-btn.primary{background:#e8e4df;color:#222;border-color:#e8e4df}
+.comp-list{padding-bottom:40px}
+.comp-item{background:#fff;border:1.5px solid #e8e4df;border-radius:14px;padding:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+body.dark .comp-item{background:#2a2826;border-color:#3a3632}
+.comp-item-thumb{width:56px;height:56px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f5f3f0}
+.comp-item-thumb img{width:100%;height:100%;object-fit:cover}
+.comp-item-info{flex:1;min-width:0}
+.comp-item-name{font-size:13px;font-weight:600;color:#2c2c2c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.dark .comp-item-name{color:#e8e4df}
+.comp-item-size{font-size:11px;color:#aaa;margin-top:2px}
+.comp-item-status{font-size:11px;margin-top:3px;font-weight:600}
+.comp-item-status.done{color:#6a9a6a}
+.comp-item-status.error{color:#c06060}
+.comp-item-status.pending{color:#d4a017}
+.comp-item-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.comp-item-btn{padding:6px 12px;border-radius:8px;border:1px solid #e0dbd5;background:#faf8f6;font-size:10px;font-weight:600;color:#6a6a6a;cursor:pointer;display:flex;align-items:center;gap:4px}
+body.dark .comp-item-btn{background:#333;border-color:#444;color:#aaa}
 body.dark .upload-icon{background:#333;box-shadow:none}
 body.dark .moments-empty{background:#2a2826;color:#6a6260}
 body.dark .msg-btn{background:#2a2826;color:#a09890}
@@ -910,6 +981,11 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
     </div>
     <input type="file" id="fileInput" multiple accept="*/*">
     <div class="upload-progress-wrap" id="uploadProgress"></div>
+    <div class="tool-entry" id="compressorEntry" onclick="openCompressor()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>图片压缩 / 格式转换</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" style="margin-left:auto;opacity:.4"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
   </div>
 
   <div class="bottom-bar">
@@ -1212,6 +1288,80 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- IMAGE COMPRESSOR -->
+<div class="comp-overlay" id="compOverlay">
+  <div class="comp-panel">
+    <div class="comp-header">
+      <button class="comp-back" onclick="closeCompressor()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><path d="M15 19l-7-7 7-7"/></svg></button>
+      <span class="comp-title">图片压缩 / 格式转换</span>
+      <span style="width:22px"></span>
+    </div>
+    <div class="comp-upload-area" id="compUploadArea" onclick="document.getElementById('compFileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="36" height="36" style="opacity:.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="font-size:14px;font-weight:600;color:#6a6a6a;margin-top:8px">选择图片</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">支持 JPG、PNG、WebP、AVIF、GIF</div>
+    </div>
+    <input type="file" id="compFileInput" accept="image/*" multiple style="display:none">
+    <div class="comp-config" id="compConfig" style="display:none">
+      <div class="comp-stats" id="compStats">
+        <div class="comp-stat"><div class="comp-stat-label">FILES</div><div class="comp-stat-num" id="compFileCount">0</div></div>
+        <div class="comp-stat"><div class="comp-stat-label">INPUT</div><div class="comp-stat-num" id="compInputSize">0 B</div></div>
+        <div class="comp-stat"><div class="comp-stat-label">OUTPUT</div><div class="comp-stat-num" id="compOutputSize">0 B</div></div>
+        <div class="comp-stat"><div class="comp-stat-label">SAVED</div><div class="comp-stat-num" id="compSaved">--</div></div>
+      </div>
+      <div class="comp-field">
+        <label>格式</label>
+        <select id="compFormat">
+          <option value="jpeg">JPEG</option>
+          <option value="png">PNG</option>
+          <option value="webp" selected>WebP</option>
+          <option value="avif">AVIF</option>
+        </select>
+      </div>
+      <div class="comp-field">
+        <label>质量</label>
+        <div class="comp-quality-row"><input type="range" id="compQuality" min="10" max="100" value="75" oninput="document.getElementById('compQualityVal').textContent=this.value+'%'"><span id="compQualityVal">75%</span></div>
+      </div>
+      <div class="comp-field">
+        <label>最长边</label>
+        <select id="compMaxSize">
+          <option value="0">原尺寸</option>
+          <option value="2048">2048px</option>
+          <option value="1280">1280px</option>
+          <option value="720">720px</option>
+          <option value="480">480px</option>
+        </select>
+      </div>
+      <div class="comp-actions">
+        <button class="comp-btn primary" onclick="runCompress()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>开始压缩</button>
+        <button class="comp-btn" onclick="compDownloadAll()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>全部下载</button>
+        <button class="comp-btn" onclick="compClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>
+      </div>
+    </div>
+    <div class="comp-list" id="compList"></div>
+  </div>
+</div>
+
+<!-- IMAGE CROPPER -->
+<div class="crop-overlay" id="cropOverlay">
+  <div class="crop-panel">
+    <div class="crop-header">
+      <button class="crop-cancel" onclick="cropCancel()">取消</button>
+      <span class="crop-title" id="cropTitle">裁剪图片</span>
+      <button class="crop-done" onclick="cropDone()">完成</button>
+    </div>
+    <div class="crop-canvas-wrap" id="cropCanvasWrap">
+      <canvas id="cropCanvas"></canvas>
+    </div>
+    <div class="crop-tools">
+      <button class="crop-tool" onclick="cropZoom(-0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+      <button class="crop-tool" onclick="cropZoom(0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+      <button class="crop-tool" onclick="cropRotate()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></button>
+      <button class="crop-tool" onclick="cropReset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0z"/><path d="M14 8H10v8"/><path d="M10 12h3"/></svg></button>
+    </div>
+  </div>
+</div>
 
 <!-- PROFILE PAGE -->
 <div class="profile-page" id="profilePage">
@@ -1796,18 +1946,254 @@ function initSettings(){
     overlay.classList.remove('show'); showToast('设置已保存');
   });
 }
+// ===== IMAGE COMPRESSOR =====
+let compFiles=[],compResults=[];
+function openCompressor(){
+  document.getElementById('compOverlay').classList.add('show');
+  compClear();
+}
+function closeCompressor(){document.getElementById('compOverlay').classList.remove('show');}
+function compClear(){
+  compFiles=[];compResults=[];
+  document.getElementById('compConfig').style.display='none';
+  document.getElementById('compList').innerHTML='';
+  document.getElementById('compUploadArea').style.display='';
+  compUpdateStats();
+}
+function compFormatSize(b){
+  if(b<1024)return b+'B';
+  if(b<1024*1024)return (b/1024).toFixed(1)+'KB';
+  return (b/(1024*1024)).toFixed(2)+'MB';
+}
+function compUpdateStats(){
+  document.getElementById('compFileCount').textContent=compFiles.length;
+  const inputTotal=compFiles.reduce((s,f)=>s+f.size,0);
+  document.getElementById('compInputSize').textContent=compFormatSize(inputTotal);
+  const outputTotal=compResults.reduce((s,r)=>s+(r?r.size:0),0);
+  document.getElementById('compOutputSize').textContent=compResults.length?compFormatSize(outputTotal):'0 B';
+  if(inputTotal&&outputTotal){
+    const pct=((1-outputTotal/inputTotal)*100).toFixed(0);
+    document.getElementById('compSaved').textContent=(pct>=0?'-':'')+Math.abs(pct)+'%';
+  }else{document.getElementById('compSaved').textContent='--';}
+}
+document.getElementById('compFileInput').addEventListener('change',(e)=>{
+  const files=Array.from(e.target.files).filter(f=>f.type.startsWith('image/'));
+  if(!files.length)return;
+  compFiles.push(...files);
+  compResults=new Array(compFiles.length).fill(null);
+  document.getElementById('compConfig').style.display='';
+  document.getElementById('compUploadArea').style.display='none';
+  compUpdateStats();
+  compRenderList();
+  e.target.value='';
+});
+function compRenderList(){
+  const list=document.getElementById('compList');
+  list.innerHTML=compFiles.map((f,i)=>{
+    const r=compResults[i];
+    let status='';
+    if(r){status=`<div class="comp-item-status done">完成 ${compFormatSize(r.size)}</div>`;}
+    else if(r===false){status='<div class="comp-item-status error">失败</div>';}
+    else{status='<div class="comp-item-status pending">等待中</div>';}
+    return `<div class="comp-item"><div class="comp-item-thumb"><img src="${URL.createObjectURL(f)}" loading="lazy"></div><div class="comp-item-info"><div class="comp-item-name">${f.name}</div><div class="comp-item-size">${compFormatSize(f.size)}</div>${status}</div><div class="comp-item-actions">${r?`<button class="comp-item-btn" onclick="compDownloadOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载</button>`:''}<button class="comp-item-btn" onclick="compRemoveOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>删除</button></div></div>`;
+  }).join('');
+}
+async function runCompress(){
+  const fmt=document.getElementById('compFormat').value;
+  const quality=parseInt(document.getElementById('compQuality').value)/100;
+  const maxSize=parseInt(document.getElementById('compMaxSize').value);
+  const mime='image/'+(fmt==='jpg'?'jpeg':fmt);
+  for(let i=0;i<compFiles.length;i++){
+    if(compResults[i])continue; // already done
+    try{
+      const blob=await compressImage(compFiles[i],{format:mime,quality,maxSize});
+      compResults[i]=blob;
+    }catch{compResults[i]=false;}
+    compRenderList();compUpdateStats();
+  }
+  showToast('压缩完成');
+}
+function compressImage(file,opts){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(opts.maxSize&&Math.max(w,h)>opts.maxSize){
+        const scale=opts.maxSize/Math.max(w,h);
+        w=Math.round(w*scale);h=Math.round(h*scale);
+      }
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);
+      cv.toBlob(blob=>{
+        if(blob)resolve(blob);else reject(new Error('toBlob failed'));
+      },opts.format,opts.quality);
+    };
+    img.onerror=()=>reject(new Error('load failed'));
+    img.src=URL.createObjectURL(file);
+  });
+}
+function compDownloadOne(i){
+  const r=compResults[i];if(!r)return;
+  const fmt=document.getElementById('compFormat').value;
+  const ext=fmt==='jpeg'?'jpg':fmt;
+  const name=compFiles[i].name.replace(/\.[^.]+$/,'')+'.'+ext;
+  const a=document.createElement('a');a.href=URL.createObjectURL(r);a.download=name;a.click();
+}
+function compRemoveOne(i){
+  compFiles.splice(i,1);compResults.splice(i,1);
+  if(!compFiles.length){compClear();return;}
+  compRenderList();compUpdateStats();
+}
+function compDownloadAll(){
+  compResults.forEach((r,i)=>{if(r)compDownloadOne(i);});
+}
+
+// ===== IMAGE CROPPER =====
+let cropImg=null,cropX=0,cropY=0,cropScale=1,cropRot=0,cropAspect=1,cropShape='circle',cropCallback=null;
+function openCropper(src,opts){
+  return new Promise(resolve=>{
+    cropCallback=resolve;
+    cropAspect=opts.aspect||1;
+    cropShape=opts.shape||'rect'; // 'circle' or 'rect'
+    cropScale=1;cropX=0;cropY=0;cropRot=0;
+    document.getElementById('cropTitle').textContent=opts.title||'裁剪图片';
+    const img=new Image();img.crossOrigin='anonymous';
+    img.onload=()=>{cropImg=img;drawCrop();document.getElementById('cropOverlay').classList.add('show');initCropTouch();};
+    img.onerror=()=>{showToast('图片加载失败');resolve(null);};
+    img.src=src;
+  });
+}
+function drawCrop(){
+  const wrap=document.getElementById('cropCanvasWrap');
+  const cv=document.getElementById('cropCanvas');
+  const ctx=cv.getContext('2d');
+  const ww=wrap.clientWidth,wh=wrap.clientHeight;
+  cv.width=ww;cv.height=wh;
+  // Dark background
+  ctx.fillStyle='#111';ctx.fillRect(0,0,ww,wh);
+  // Draw image
+  ctx.save();
+  ctx.translate(ww/2+cropX,wh/2+cropY);
+  ctx.rotate(cropRot*Math.PI/180);
+  const sc=Math.min(ww/cropImg.width,wh/cropImg.height)*cropScale;
+  ctx.drawImage(cropImg,-cropImg.width*sc/2,-cropImg.height*sc/2,cropImg.width*sc,cropImg.height*sc);
+  ctx.restore();
+  // Crop guide overlay
+  const guideSize=Math.min(ww,wh)*0.75;
+  const gw=cropAspect>=1?guideSize:guideSize*cropAspect;
+  const gh=cropAspect>=1?guideSize/cropAspect:guideSize;
+  const gx=(ww-gw)/2,gy=(wh-gh)/2;
+  // Dark mask outside guide
+  ctx.fillStyle='rgba(0,0,0,.55)';
+  ctx.fillRect(0,0,ww,gy); // top
+  ctx.fillRect(0,gy+gh,ww,wh-gy-gh); // bottom
+  ctx.fillRect(0,gy,gx,gh); // left
+  ctx.fillRect(gx+gw,gy,ww-gx-gw,gh); // right
+  if(cropShape==='circle'){
+    // Additional circle mask inside the rect guide
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(gx,gy,gw,gh);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.ellipse(ww/2,wh/2,gw/2,gh/2,0,0,Math.PI*2);
+    ctx.rect(gx+gw,gy,-(gw),gh); // inverse
+    ctx.fillStyle='rgba(0,0,0,.55)';
+    ctx.fill('evenodd');
+    ctx.restore();
+  }
+  // Guide border
+  ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1.5;
+  if(cropShape==='circle'){ctx.beginPath();ctx.ellipse(ww/2,wh/2,gw/2,gh/2,0,0,Math.PI*2);ctx.stroke();}
+  else{ctx.strokeRect(gx,gy,gw,gh);}
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=0.5;
+  for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(gx+gw*i/3,gy);ctx.lineTo(gx+gw*i/3,gy+gh);ctx.stroke();}
+  for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(gx,gy+gh*i/3);ctx.lineTo(gx+gw,gy+gh*i/3);ctx.stroke();}
+}
+function cropZoom(delta){cropScale=Math.max(0.2,Math.min(5,cropScale+delta));drawCrop();}
+function cropRotate(){cropRot=(cropRot+90)%360;drawCrop();}
+function cropReset(){cropScale=1;cropX=0;cropY=0;cropRot=0;drawCrop();}
+function cropCancel(){document.getElementById('cropOverlay').classList.remove('show');if(cropCallback)cropCallback(null);cropCallback=null;}
+function cropDone(){
+  const wrap=document.getElementById('cropCanvasWrap');
+  const ww=wrap.clientWidth,wh=wrap.clientHeight;
+  const guideSize=Math.min(ww,wh)*0.75;
+  const gw=cropAspect>=1?guideSize:guideSize*cropAspect;
+  const gh=cropAspect>=1?guideSize/cropAspect:guideSize;
+  const gx=(ww-gw)/2,gy=(wh-gh)/2;
+  // Output canvas at guide size
+  const out=document.createElement('canvas');
+  const outW=Math.round(gw*2),outH=Math.round(gh*2); // 2x for quality
+  out.width=outW;out.height=outH;
+  const octx=out.getContext('2d');
+  octx.save();
+  const sx=outW/gw,sy=outH/gh;
+  octx.translate(-gx*sx,-gy*sy);
+  octx.scale(sx,sy);
+  // Redraw image at full res
+  octx.translate(ww/2+cropX,wh/2+cropY);
+  octx.rotate(cropRot*Math.PI/180);
+  const sc=Math.min(ww/cropImg.width,wh/cropImg.height)*cropScale;
+  octx.drawImage(cropImg,-cropImg.width*sc/2,-cropImg.height*sc/2,cropImg.width*sc,cropImg.height*sc);
+  octx.restore();
+  if(cropShape==='circle'){
+    // Apply circle mask
+    octx.globalCompositeOperation='destination-in';
+    octx.beginPath();
+    octx.ellipse(outW/2,outH/2,outW/2,outH/2,0,0,Math.PI*2);
+    octx.fill();
+  }
+  out.toBlob(blob=>{
+    document.getElementById('cropOverlay').classList.remove('show');
+    if(cropCallback)cropCallback(blob);
+    cropCallback=null;
+  },'image/png',0.92);
+}
+let _cropTouchInited=false;
+function initCropTouch(){
+  if(_cropTouchInited)return;_cropTouchInited=true;
+  const wrap=document.getElementById('cropCanvasWrap');
+  let startX=0,startY=0,startCX=0,startCY=0,pinchDist=0,pinchScale=1;
+  wrap.addEventListener('pointerdown',e=>{
+    startX=e.clientX;startY=e.clientY;startCX=cropX;startCY=cropY;
+    wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener('pointermove',e=>{
+    if(e.pressure>0){cropX=startCX+(e.clientX-startX);cropY=startCY+(e.clientY-startY);drawCrop();}
+  });
+  wrap.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      pinchScale=cropScale;
+    }
+  },{passive:true});
+  wrap.addEventListener('touchmove',e=>{
+    if(e.touches.length===2){
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      cropScale=Math.max(0.2,Math.min(5,pinchScale*(d/pinchDist)));drawCrop();
+    }
+  },{passive:true});
+  wrap.addEventListener('wheel',e=>{e.preventDefault();cropZoom(e.deltaY>0?-0.05:0.05);},{passive:false});
+}
+
 function initImagePicker(pickerId,inputId,previewId,hiddenId){
   const picker=document.getElementById(pickerId),input=document.getElementById(inputId);
   const preview=document.getElementById(previewId),hidden=document.getElementById(hiddenId);
+  const isAvatar=pickerId.includes('avatar')||pickerId.includes('Avatar');
   picker.addEventListener('click',()=>input.click());
   input.addEventListener('change',async(e)=>{
     const file=e.target.files[0]; if(!file)return;
-    const localUrl=URL.createObjectURL(file); preview.src=localUrl; picker.classList.remove('empty');
+    const localUrl=URL.createObjectURL(file);
+    const cropped=await openCropper(localUrl,{aspect:isAvatar?1:16/9,shape:isAvatar?'circle':'rect',title:isAvatar?'裁剪头像':'裁剪封面'});
+    if(!cropped){input.value='';return;}
+    const croppedUrl=URL.createObjectURL(cropped);
+    preview.src=croppedUrl; picker.classList.remove('empty');
     showToast('上传中...');
-    try{ const fd=new FormData();fd.append('file',file); const resp=await fetch(API.upload,{method:'POST',body:fd});
+    try{ const fd=new FormData();fd.append('file',new File([cropped],file.name,{type:'image/png'})); const resp=await fetch(API.upload,{method:'POST',body:fd});
       if(resp.ok){const data=await resp.json();if(data&&data[0]){const u=location.origin+data[0].src;hidden.value=u;preview.src=u;showToast('图片已上传');}}
       else throw new Error('fail');
-    }catch(err){showToast('上传失败');hidden.value=localUrl;}
+    }catch(err){showToast('上传失败');hidden.value=croppedUrl;}
     input.value='';
   });
 }
@@ -1825,15 +2211,32 @@ function initQuickEdit(){
   popup.addEventListener('click',(e)=>{if(e.target===popup)popup.classList.remove('show');});
   document.getElementById('qeUploadBtn').addEventListener('click',()=>fileInput.click());
   fileInput.addEventListener('change',async(e)=>{
-    const file=e.target.files[0];if(!file)return;popup.classList.remove('show');showToast('上传中...');
-    try{const fd=new FormData();fd.append('file',file);const resp=await fetch(API.upload,{method:'POST',body:fd});
+    const file=e.target.files[0];if(!file)return;popup.classList.remove('show');
+    const isAv=qeTarget==='avatar';
+    const cropped=await openCropper(URL.createObjectURL(file),{aspect:isAv?1:16/9,shape:isAv?'circle':'rect',title:isAv?'裁剪头像':'裁剪封面'});
+    if(!cropped){fileInput.value='';return;}
+    showToast('上传中...');
+    try{const fd=new FormData();fd.append('file',new File([cropped],file.name,{type:'image/png'}));const resp=await fetch(API.upload,{method:'POST',body:fd});
       if(resp.ok){const data=await resp.json();if(data&&data[0]){applyQuickEdit(location.origin+data[0].src);showToast('已更换');}}
       else throw new Error('fail');
-    }catch(err){applyQuickEdit(URL.createObjectURL(file));showToast('已使用本地预览');}
+    }catch(err){applyQuickEdit(URL.createObjectURL(cropped));showToast('已使用本地预览');}
     fileInput.value='';
   });
   document.getElementById('qeUrlToggle').addEventListener('click',()=>{urlRow.classList.toggle('show');if(urlRow.classList.contains('show'))document.getElementById('qeUrlInput').focus();});
-  document.getElementById('qeUrlConfirm').addEventListener('click',()=>{const u=document.getElementById('qeUrlInput').value.trim();if(!u){showToast('请输入链接');return;}applyQuickEdit(u);popup.classList.remove('show');showToast('已更换');});
+  document.getElementById('qeUrlConfirm').addEventListener('click',async()=>{
+    const u=document.getElementById('qeUrlInput').value.trim();if(!u){showToast('请输入链接');return;}
+    popup.classList.remove('show');
+    const isAv=qeTarget==='avatar';
+    const cropped=await openCropper(u,{aspect:isAv?1:16/9,shape:isAv?'circle':'rect',title:isAv?'裁剪头像':'裁剪封面'});
+    if(cropped){
+      const croppedUrl=URL.createObjectURL(cropped);
+      // Try upload the cropped version
+      try{const fd=new FormData();fd.append('file',new File([cropped],'cropped.png',{type:'image/png'}));const resp=await fetch(API.upload,{method:'POST',body:fd});
+        if(resp.ok){const data=await resp.json();if(data&&data[0]){applyQuickEdit(location.origin+data[0].src);showToast('已更换');return;}}
+      }catch{}
+      applyQuickEdit(croppedUrl);showToast('已更换');
+    }else{applyQuickEdit(u);showToast('已更换');}
+  });
   document.getElementById('qeUrlInput').addEventListener('keydown',(e)=>{if(e.key==='Enter')document.getElementById('qeUrlConfirm').click();});
 }
 function applyQuickEdit(url){
@@ -1924,7 +2327,24 @@ function isVideoFile(name,type){
   return 'mp4,mov,avi,mkv,wmv,flv,webm,m4v,3gp'.split(',').includes(ext);
 }
 
+function checkStorageLimit(){
+  try{
+    const limits=JSON.parse(localStorage.getItem('imgbed_storage_limits')||'{}');
+    const defaultGB=parseFloat(localStorage.getItem('imgbed_default_storage_gb'))||5;
+    const sess=authGetSession();
+    if(!sess)return true;
+    const limitGB=limits[sess.username]||defaultGB;
+    const limitBytes=limitGB*1024*1024*1024;
+    // Estimate current usage from image count (rough: 0.5MB per file)
+    const usedBytes=allImages.length*512*1024;
+    if(usedBytes>=limitBytes){
+      showToast('储存空间已满 ('+limitGB+'GB)，请清理后再上传');return false;
+    }
+    return true;
+  }catch{return true;}
+}
 async function handleFiles(files){
+  if(!checkStorageLimit())return;
   // Sort by filename (folder order) instead of selection order
   files=[...files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
   const pw=document.getElementById('uploadProgress');pw.classList.add('active');pw.innerHTML='';

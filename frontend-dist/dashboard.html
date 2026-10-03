@@ -257,7 +257,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','P
     <!-- 存储渠道 -->
     <div class="acc-group" data-group="channels">
       <button class="acc-trigger" onclick="toggleAcc(this)"><span class="acc-title">存储渠道</span><span class="acc-badge">CHANNELS</span><svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
-      <div class="acc-body"><div class="acc-list" id="channelList"><div class="empty-state">点击展开加载...</div></div><div class="acc-desc">查看已配置的存储渠道。</div></div>
+      <div class="acc-body"><div class="acc-list" id="channelList"><div class="empty-state">点击展开加载...</div></div><div class="acc-desc">点击渠道进入配置页面。</div></div>
+    </div>
+
+    <!-- 账号管理 -->
+    <div class="acc-group" data-group="accounts">
+      <button class="acc-trigger" onclick="toggleAcc(this)"><span class="acc-title">账号管理</span><span class="acc-badge">ACCOUNTS</span><svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="acc-body">
+        <div style="padding:0 0 10px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:12px;color:var(--sub)">默认储存限额</span>
+          <div style="display:flex;align-items:center;gap:6px"><input class="settings-input" id="defaultStorageLimit" type="number" value="5" min="1" style="width:60px;text-align:right;padding:5px 8px;font-size:13px"><span style="font-size:12px;color:var(--sub)">GB</span><button class="settings-btn primary small" onclick="saveDefaultStorage()">保存</button></div>
+        </div>
+        <div class="acc-list" id="accountList"><div class="empty-state">点击展开加载...</div></div>
+        <div class="acc-desc">管理用户储存空间。超过限额时用户将无法上传。</div>
+      </div>
     </div>
 
     <!-- API 令牌 -->
@@ -396,13 +409,12 @@ function toggleUrlInput(){$('upUrlRow').classList.toggle('show');if($('upUrlRow'
 function triggerFileUpload(){$('hiddenFileInput').click();}
 $('hiddenFileInput').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return;
-  closeUploadPopup();showToast('上传中...');
-  try{
-    const fd=new FormData();fd.append('file',file);
-    const r=await fetch('/upload',{method:'POST',body:fd,credentials:'include'});
-    if(r.ok){const d=await r.json();if(d&&d[0]){applyUpload(location.origin+d[0].src);showToast('已更换');}}
-    else throw 0;
-  }catch{applyUpload(URL.createObjectURL(file));showToast('已使用本地预览');}
+  closeUploadPopup();showToast('处理中...');
+  // Convert to data URL for localStorage persistence
+  const reader=new FileReader();
+  reader.onload=()=>{applyUpload(reader.result);showToast('已更换');};
+  reader.onerror=()=>showToast('读取失败');
+  reader.readAsDataURL(file);
   $('hiddenFileInput').value='';
 });
 function confirmUrlInput(){
@@ -430,7 +442,7 @@ function toggleAcc(trigger){
   const g=trigger.closest('.acc-group'),name=g.dataset.group,wasOpen=g.classList.contains('open');
   document.querySelectorAll('.acc-group').forEach(x=>x.classList.remove('open'));
   if(!wasOpen){g.classList.add('open');if(!accLoaded[name]){accLoaded[name]=true;
-    if(name==='images')loadImages(1);else if(name==='users')loadUsers();else if(name==='channels')loadChannels();else if(name==='tokens')loadTokens();
+    if(name==='images')loadImages(1);else if(name==='users')loadUsers();else if(name==='channels')loadChannels();else if(name==='tokens')loadTokens();else if(name==='accounts')loadAccounts();
   }}
 }
 
@@ -499,6 +511,13 @@ function openDetail(type){
     $('detailIdx').textContent='BLOCK / 02';$('detailTitle').textContent='IP 黑名单';
     $('detailContent').innerHTML='<div class="detail-desc-box"><div class="detail-desc-label">说明</div><div class="detail-desc-text">黑名单中的 IP 将被禁止上传。</div></div><div style="display:flex;gap:8px;margin-bottom:16px"><input class="settings-input" id="newBlockIp" placeholder="输入 IP 地址" style="flex:1"><button class="settings-btn primary small" onclick="addBlockIp()">添加</button></div><div id="dBlockIpList" class="acc-list"><div class="empty-state">加载中...</div></div>';
     loadBlockIpList();
+  }else if(type.startsWith('channel_')){
+    const parts=type.replace('channel_','').split('_');
+    const chType=parts[0],chName=parts.slice(1).join('_');
+    const labels={telegram:'Telegram',cfr2:'Cloudflare R2',s3:'S3',discord:'Discord',huggingface:'HuggingFace',webdav:'WebDAV'};
+    $('detailIdx').textContent='CHANNEL';$('detailTitle').textContent=(labels[chType]||chType)+' · '+chName;
+    $('detailContent').innerHTML='<div class="detail-desc-box"><div class="detail-desc-label">渠道配置</div><div class="detail-desc-text">此渠道的配置信息存储在 Cloudflare 环境变量中。如需修改，请前往 Cloudflare Dashboard → Pages → Settings → Environment Variables 中编辑。</div></div><div id="dChannelInfo" class="acc-list"><div class="empty-state">加载中...</div></div>';
+    loadChannelDetail(chType,chName);
   }
 }
 function closeDetail(){$('detailCard').classList.remove('active');$('accordion').style.display='';$('toolsHeader').style.display='';}
@@ -534,9 +553,9 @@ async function loadChannels(){
   try{
     const r=await fetch('/api/manage/sysConfig/upload',{credentials:'include'});const d=await r.json();
     const items=[];const labels={telegram:'Telegram',cfr2:'Cloudflare R2',s3:'S3',discord:'Discord',huggingface:'HuggingFace',webdav:'WebDAV'};
-    ['telegram','cfr2','s3','discord','huggingface','webdav'].forEach(t=>{(d[t]?.channels||[]).forEach(ch=>{items.push({type:labels[t]||t,name:ch.name,enabled:ch.enabled!==false,savePath:ch.savePath||''});});});
+    ['telegram','cfr2','s3','discord','huggingface','webdav'].forEach(t=>{(d[t]?.channels||[]).forEach(ch=>{items.push({type:t,typeLabel:labels[t]||t,name:ch.name,enabled:ch.enabled!==false,savePath:ch.savePath||''});});});
     if(!items.length){el.innerHTML='<div class="empty-state">暂未配置存储渠道</div>';return;}
-    el.innerHTML=items.map(ch=>`<div class="tool-item" style="cursor:default"><div class="tool-item-left"><div><div class="tool-item-name">${esc(ch.name)}</div><div class="tool-item-sub">${esc(ch.type)} · ${ch.savePath==='environment variable'?'环境变量':'自定义'}</div></div></div><span style="font-size:11px;color:${ch.enabled?'var(--success)':'var(--danger)'}">${ch.enabled?'启用':'禁用'}</span></div>`).join('');
+    el.innerHTML=items.map(ch=>`<div class="tool-item" onclick="openDetail('channel_${esc(ch.type)}_${esc(ch.name)}')"><div class="tool-item-left"><div><div class="tool-item-name">${esc(ch.name)}</div><div class="tool-item-sub">${esc(ch.typeLabel)} · ${ch.savePath==='environment variable'?'环境变量':'自定义'}</div></div></div><span style="font-size:11px;color:${ch.enabled?'var(--success)':'var(--danger)'}">${ch.enabled?'启用':'禁用'}</span></div>`).join('');
   }catch(e){el.innerHTML=`<div class="empty-state">加载失败</div>`;}
 }
 
@@ -655,6 +674,75 @@ async function saveOthersConfig(){
   try{await fetch('/api/manage/sysConfig/others',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});showToast('其他设置已保存');}catch{showToast('保存失败');}
 }
 
+/* ============ CHANNEL DETAIL ============ */
+async function loadChannelDetail(chType,chName){
+  const el=$('dChannelInfo');
+  try{
+    const r=await fetch('/api/manage/sysConfig/upload',{credentials:'include'});const d=await r.json();
+    const channels=d[chType]?.channels||[];
+    const ch=channels.find(c=>c.name===chName);
+    if(!ch){el.innerHTML='<div class="empty-state">渠道未找到</div>';return;}
+    let h='';
+    const entries=Object.entries(ch).filter(([k])=>k!=='name');
+    entries.forEach(([key,val])=>{
+      const display=typeof val==='object'?JSON.stringify(val,null,2):String(val);
+      const isSecret=key.toLowerCase().includes('token')||key.toLowerCase().includes('secret')||key.toLowerCase().includes('password')||key.toLowerCase().includes('key');
+      h+=`<div class="tool-item" style="cursor:default;flex-direction:column;align-items:flex-start;gap:4px"><div class="tool-item-name" style="font-size:11px;color:var(--sub);text-transform:uppercase">${esc(key)}</div><div style="font-size:13px;color:var(--text);word-break:break-all">${isSecret?'••••••••':esc(display)}</div></div>`;
+    });
+    if(!h)h='<div class="empty-state">无配置详情</div>';
+    el.innerHTML=h;
+  }catch{el.innerHTML='<div class="empty-state">加载失败</div>';}
+}
+
+/* ============ ACCOUNT MANAGEMENT ============ */
+const STORAGE_LIMITS_KEY='imgbed_storage_limits';
+const DEFAULT_STORAGE_GB=5;
+function getStorageLimits(){
+  try{return JSON.parse(localStorage.getItem(STORAGE_LIMITS_KEY)||'{}');}catch{return {};}
+}
+function saveStorageLimits(limits){localStorage.setItem(STORAGE_LIMITS_KEY,JSON.stringify(limits));}
+function getDefaultStorageLimit(){
+  try{return parseFloat(localStorage.getItem('imgbed_default_storage_gb'))||DEFAULT_STORAGE_GB;}catch{return DEFAULT_STORAGE_GB;}
+}
+function saveDefaultStorage(){
+  const val=parseFloat($('defaultStorageLimit').value)||DEFAULT_STORAGE_GB;
+  localStorage.setItem('imgbed_default_storage_gb',String(val));
+  showToast('默认限额已设为 '+val+' GB');
+}
+function loadAccounts(){
+  const users=loadAuthUsers();
+  const limits=getStorageLimits();
+  const defaultGB=getDefaultStorageLimit();
+  $('defaultStorageLimit').value=defaultGB;
+  const el=$('accountList');
+  if(!users.length){el.innerHTML='<div class="empty-state">暂无用户</div>';return;}
+  el.innerHTML=users.filter(u=>u.status==='approved').map(u=>{
+    const limitGB=limits[u.username]||defaultGB;
+    const usedKey='imgbed_images_'+u.username;
+    let usedMB=0;
+    try{const imgs=JSON.parse(localStorage.getItem(usedKey)||'[]');usedMB=(imgs.length*0.5).toFixed(1);}catch{} // rough estimate
+    const pct=Math.min(100,(usedMB/(limitGB*1024)*100)).toFixed(0);
+    const barColor=pct>90?'var(--danger)':pct>70?'#d4a017':'var(--success)';
+    return `<div class="tool-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div class="tool-item-name">${esc(u.username)}${u.role==='admin'?' <span style="font-size:10px;color:var(--sub)">(管理员)</span>':''}</div>
+        <div class="tool-item-sub">已用 ~${usedMB} MB / ${limitGB} GB</div></div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" class="settings-input" value="${limitGB}" min="0.1" step="0.5" style="width:55px;padding:4px 6px;font-size:12px;text-align:right" onchange="setUserStorage('${esc(u.username)}',this.value)">
+          <span style="font-size:11px;color:var(--sub)">GB</span>
+        </div>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s"></div></div>
+    </div>`;
+  }).join('');
+}
+function setUserStorage(username,val){
+  const limits=getStorageLimits();
+  limits[username]=parseFloat(val)||getDefaultStorageLimit();
+  saveStorageLimits(limits);
+  showToast(username+' 限额已设为 '+limits[username]+' GB');
+}
+
 /* ============ UTILS ============ */
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function refreshAll(){
@@ -668,6 +756,7 @@ function refreshAll(){
     if(name==='images')loadImages(currentPage);
     else if(name==='users')loadUsers();
     else if(name==='channels')loadChannels();
+    else if(name==='accounts')loadAccounts();
     else if(name==='tokens')loadTokens();
     accLoaded[name]=true;
   });
