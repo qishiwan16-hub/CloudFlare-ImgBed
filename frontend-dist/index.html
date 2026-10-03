@@ -151,6 +151,7 @@ img{display:block;max-width:100%}
 
 #fileInput{display:none}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes gdPop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 .fade-up{animation:fadeUp .5s ease both}
 .fade-up-1{animation-delay:.1s}
 .fade-up-2{animation-delay:.2s}
@@ -392,6 +393,9 @@ img{display:block;max-width:100%}
 .as-action-item.warn svg{color:#d4a017}
 .as-action-item.danger{color:#c0392b}
 .as-action-item.danger svg{color:#c0392b}
+/* Album privacy badge */
+.album-vis-badge{position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-size:9px;color:#fff;display:flex;align-items:center;gap:3px;z-index:2}
+.album-vis-badge svg{width:10px;height:10px}
 /* Image Cropper - Modal */
 .crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:300;display:none;align-items:center;justify-content:center}
 .crop-overlay.show{display:flex}
@@ -1165,6 +1169,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
     </div>
     <div class="as-cover" id="asCover"></div>
     <div class="as-actions">
+      <button class="as-action-item" id="asVisToggle" onclick="asToggleVisibility()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>设为私密</button>
       <button class="as-action-item" onclick="asRename()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>重命名</button>
       <button class="as-action-item" onclick="asChangeCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>更换封面</button>
       <button class="as-action-item" onclick="asDeleteByType()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>按类型删除</button>
@@ -2015,11 +2020,16 @@ let config = { ...DEFAULT_CONFIG };
 let allImages = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Init UI components first (just binds events, no data)
-  initUpload(); initLightbox(); initResultSheet();
-  initQuickEdit(); initSettings(); initGalleryPage(); initAlbumPage(); initAlbumDialog();
-  // Auth check first, then load per-account data
-  authCheckLogin();
+  // Auth check FIRST - ensures login overlay always shows if not logged in
+  try { authCheckLogin(); } catch(e) {
+    console.error('authCheckLogin failed:', e);
+    // Force show login overlay as fallback
+    document.getElementById('authOverlay').classList.add('show');
+    try { switchAuthTab('login'); } catch(e2) {}
+  }
+  // Init UI components (binds events) - wrapped so one failure doesn't block others
+  const inits = [initUpload, initLightbox, initResultSheet, initQuickEdit, initSettings, initGalleryPage, initAlbumPage, initAlbumDialog];
+  inits.forEach(fn => { try { fn(); } catch(e) { console.error(fn.name + ' failed:', e); } });
 });
 
 // CONFIG
@@ -2349,7 +2359,7 @@ function cropDone(){
   // Redraw image at full res
   octx.translate(ww/2+cropX,wh/2+cropY);
   octx.rotate(cropRot*Math.PI/180);
-  const sc=Math.min(ww/cropImg.width,wh/cropImg.height)*cropScale;
+  // sc already computed above
   octx.drawImage(cropImg,-cropImg.width*sc/2,-cropImg.height*sc/2,cropImg.width*sc,cropImg.height*sc);
   octx.restore();
   if(cropShape==='circle'){
@@ -2846,8 +2856,8 @@ function renderHomeAlbums(){
   const scroll=document.getElementById('albumsScroll');
   // Built-in + user albums
   const builtIn=[{name:'全部',count:allImages.length,cover:allImages[0]?.src},{name:'最近上传',count:Math.min(allImages.length,3),cover:allImages[1]?.src}];
-  const allHomeAlbums=[...builtIn,...userAlbums.map(a=>({name:a.name,count:(a.imageIdxs||[]).length,cover:a.imageIdxs&&a.imageIdxs.length?allImages[a.imageIdxs[0]]?.src:null,color:a.color}))]; 
-  let html=allHomeAlbums.map((a,i)=>`<div class="album-card" onclick="homeAlbumClick(${i})" style="${a.color?'border-bottom:3px solid '+a.color:''}"><div class="ac-thumb">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}</div><div class="ac-info"><div class="ac-name">${a.name}</div><div class="ac-cnt">${a.count} 张照片</div></div></div>`).join('');
+  const allHomeAlbums=[...builtIn,...userAlbums.map(a=>({name:a.name,count:(a.imageIdxs||[]).length,cover:a.imageIdxs&&a.imageIdxs.length?allImages[a.imageIdxs[0]]?.src:null,color:a.color,visibility:a.visibility||'public'}))]; 
+  let html=allHomeAlbums.map((a,i)=>`<div class="album-card" onclick="homeAlbumClick(${i})" style="${a.color?'border-bottom:3px solid '+a.color:''}"><div class="ac-thumb" style="position:relative">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}${a.visibility==='private'?'<div class="album-vis-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>私密</div>':''}</div><div class="ac-info"><div class="ac-name">${a.name}</div><div class="ac-cnt">${a.count} 张照片</div></div></div>`).join('');
   scroll.innerHTML=html;
 }
 function homeAlbumClick(idx){
@@ -3065,7 +3075,7 @@ function refreshAlbumData(){
   ];
   userAlbums.forEach(a=>{
     const imgs=(a.imageIdxs||[]).map(i=>allImages[i]).filter(Boolean);
-    allAlbums.push({name:a.name,images:imgs,cover:imgs[0]?.src,color:a.color,category:a.category||''});
+    allAlbums.push({name:a.name,images:imgs,cover:imgs[0]?.src,color:a.color,category:a.category||'',visibility:a.visibility||'public'});
   });
   const types={};
   allImages.forEach(img=>{const ext=(img.name.split('.').pop()||'other').toLowerCase();if(!types[ext])types[ext]=[];types[ext].push(img);});
@@ -3119,7 +3129,7 @@ function renderAlbumList(){
   if(!filtered.length){grid.innerHTML='<div class="ap-content-empty" style="grid-column:1/-1">\u6ca1\u6709\u5339\u914d\u7684\u76f8\u518c</div>';return;}
   grid.innerHTML=`<div class="ap-acard" onclick="openAlbumDialog()" style="background:transparent;box-shadow:none"><div class="aac-thumb" style="background:#f0ede9;display:flex;align-items:center;justify-content:center;border:2px dashed #e0dbd5;border-radius:14px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c8bfb6" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div><div class="aac-info"><div class="aac-name" style="color:#b0a89f">新建相册</div></div></div>`+filtered.map(a=>{
     const ri=allAlbums.indexOf(a);
-    return `<div class="ap-acard" data-ri="${ri}" onclick="albumCardClick(${ri})" ontouchstart="albumCardTouchStart(event,${ri})" ontouchend="albumCardTouchEnd(event)" ontouchmove="albumCardTouchCancel()"><div class="aac-thumb" style="position:relative">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f0ede9"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}${a.category?`<div class="aac-cat">${a.category}</div>`:''}<div class="aac-sel"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="aac-info"><div class="aac-name">${a.name}</div><div class="aac-cnt">${a.images.length} 张</div></div>${a.color?`<div class="aac-color" style="background:${a.color}"></div>`:''}</div>`;
+    return `<div class="ap-acard" data-ri="${ri}" onclick="albumCardClick(${ri})" ontouchstart="albumCardTouchStart(event,${ri})" ontouchend="albumCardTouchEnd(event)" ontouchmove="albumCardTouchCancel()"><div class="aac-thumb" style="position:relative">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f0ede9"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}${a.category?`<div class="aac-cat">${a.category}</div>`:''}${a.visibility==='private'?'<div class="album-vis-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>私密</div>':''}<div class="aac-sel"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="aac-info"><div class="aac-name">${a.name}</div><div class="aac-cnt">${a.images.length} 张</div></div>${a.color?`<div class="aac-color" style="background:${a.color}"></div>`:''}</div>`;
   }).join('');
 }
 function apFilterCat(cat){apCatFilter=cat;renderAlbumList();}
@@ -3189,6 +3199,16 @@ function albumCardTouchEnd(e){clearTimeout(albumLpTimer);}
 function albumCardTouchCancel(){albumLpMoved=true;clearTimeout(albumLpTimer);}
 
 function apOpenDetail(idx){
+  // Private album access check
+  const album=allAlbums[idx];
+  if(album&&album.visibility==='private'){
+    const user=authCurrentUser();
+    // Only the current logged-in user who owns the album can access
+    if(!user){showToast('请先登录后查看私密相册');return;}
+    // Check if this album belongs to the current user's userAlbums
+    const ui=idx-2;
+    if(ui<0||ui>=userAlbums.length){showToast('无权访问此相册');return;}
+  }
   currentAlbumIdx=idx; apView='detail'; apTabIdx=0;
   renderAlbumPage(); window.scrollTo(0,0);
 }
@@ -3423,9 +3443,28 @@ function openAlbumSettings(){
   document.getElementById('asTitle').textContent=album.name+' 设置';
   const coverEl=document.getElementById('asCover');
   coverEl.innerHTML=album.cover?`<img src="${album.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
+  // Update visibility toggle button
+  const ui=getUserAlbumIdx();
+  const visBtn=document.getElementById('asVisToggle');
+  if(ui>=0&&ui<userAlbums.length){
+    const vis=userAlbums[ui].visibility||'public';
+    visBtn.style.display='';
+    visBtn.innerHTML=vis==='private'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>设为公开':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>设为私密';
+  }else{visBtn.style.display='none';}
   document.getElementById('albumSettingsOverlay').classList.add('show');
 }
 function closeAlbumSettings(){document.getElementById('albumSettingsOverlay').classList.remove('show');}
+
+function asToggleVisibility(){
+  const ui=getUserAlbumIdx();
+  if(ui<0||ui>=userAlbums.length){showToast('系统相册无法设置可见性');return;}
+  const cur=userAlbums[ui].visibility||'public';
+  userAlbums[ui].visibility=cur==='private'?'public':'private';
+  saveUserAlbums();
+  closeAlbumSettings();
+  refreshAlbumData();renderAlbumPage();renderHomeAlbums();
+  showToast(userAlbums[ui].visibility==='private'?'已设为私密':'已设为公开');
+}
 
 function getUserAlbumIdx(){
   // userAlbums index = currentAlbumIdx - 2 (skip "全部" and "最近上传")
