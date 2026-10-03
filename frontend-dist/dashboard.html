@@ -399,7 +399,7 @@ $('hiddenFileInput').addEventListener('change',async e=>{
   closeUploadPopup();showToast('上传中...');
   try{
     const fd=new FormData();fd.append('file',file);
-    const r=await fetch('/upload',{method:'POST',body:fd});
+    const r=await fetch('/upload',{method:'POST',body:fd,credentials:'include'});
     if(r.ok){const d=await r.json();if(d&&d[0]){applyUpload(location.origin+d[0].src);showToast('已更换');}}
     else throw 0;
   }catch{applyUpload(URL.createObjectURL(file));showToast('已使用本地预览');}
