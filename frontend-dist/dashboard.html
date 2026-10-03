@@ -728,8 +728,9 @@ function loadAccounts(){
         <div><div class="tool-item-name">${esc(u.username)}${u.role==='admin'?' <span style="font-size:10px;color:var(--sub)">(管理员)</span>':''}</div>
         <div class="tool-item-sub">已用 ~${usedMB} MB / ${limitGB} GB</div></div>
         <div style="display:flex;align-items:center;gap:4px">
-          <input type="number" class="settings-input" value="${limitGB}" min="0.1" step="0.5" style="width:55px;padding:4px 6px;font-size:12px;text-align:right" onchange="setUserStorage('${esc(u.username)}',this.value)">
+          <input type="number" class="settings-input" id="storageInput_${esc(u.username)}" value="${limitGB}" min="0.1" step="0.5" style="width:55px;padding:4px 6px;font-size:12px;text-align:right">
           <span style="font-size:11px;color:var(--sub)">GB</span>
+          <button class="settings-btn primary small" style="padding:4px 10px;font-size:11px;margin-left:2px" onclick="setUserStorage('${esc(u.username)}',document.getElementById('storageInput_${esc(u.username)}').value)">保存</button>
         </div>
       </div>
       <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s"></div></div>

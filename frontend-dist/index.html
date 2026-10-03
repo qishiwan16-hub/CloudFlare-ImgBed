@@ -392,19 +392,19 @@ img{display:block;max-width:100%}
 .as-action-item.warn svg{color:#d4a017}
 .as-action-item.danger{color:#c0392b}
 .as-action-item.danger svg{color:#c0392b}
-/* Image Cropper */
-.crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:none;flex-direction:column}
+/* Image Cropper - Modal */
+.crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:300;display:none;align-items:center;justify-content:center}
 .crop-overlay.show{display:flex}
-.crop-panel{width:100%;height:100%;display:flex;flex-direction:column}
-.crop-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;flex-shrink:0}
+.crop-panel{width:92%;max-width:420px;max-height:85vh;background:#1a1a1a;border-radius:20px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.crop-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)}
 .crop-cancel,.crop-done{background:none;border:none;font-size:15px;font-weight:600;cursor:pointer;padding:8px 4px}
 .crop-cancel{color:#aaa}
 .crop-done{color:#6a9a6a}
 .crop-title{color:#fff;font-size:15px;font-weight:600}
-.crop-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;touch-action:none}
+.crop-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;touch-action:none;min-height:280px;max-height:50vh}
 .crop-canvas-wrap canvas{max-width:100%;max-height:100%}
-.crop-tools{display:flex;justify-content:center;gap:20px;padding:16px 0 env(safe-area-inset-bottom,24px);flex-shrink:0}
-.crop-tool{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:all .15s}
+.crop-tools{display:flex;justify-content:center;gap:16px;padding:14px 0;flex-shrink:0;border-top:1px solid rgba(255,255,255,.08)}
+.crop-tool{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:all .15s}
 .crop-tool:active{background:rgba(255,255,255,.25);transform:scale(.92)}
 /* Category filter chips */
 .ap-cat-filter{display:flex;gap:8px;padding:8px 20px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -910,6 +910,76 @@ body.dark .pp-action:hover{background:#333}
 body.dark .pp-switch{border-color:#333}
 body.dark .pp-divider{background:#333}
 body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
+
+/* UPLOAD PAGE - Full page overlay */
+.upload-page-overlay{position:fixed;inset:0;background:#fff;z-index:200;display:none;flex-direction:column;overflow:hidden}
+.upload-page-overlay.show{display:flex}
+body.dark .upload-page-overlay{background:#1a1a1a}
+.upload-page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-shrink:0;border-bottom:1px solid #f0ede8}
+body.dark .upload-page-header{border-color:#333}
+.upload-page-back{background:none;border:none;padding:4px;cursor:pointer;color:#3a3a3a}
+body.dark .upload-page-back{color:#e8e4df}
+.upload-page-title{font-size:16px;font-weight:700;color:#2c2c2c}
+body.dark .upload-page-title{color:#e8e4df}
+.upload-page-reset{background:none;border:none;font-size:13px;color:#b0a89f;cursor:pointer;display:flex;align-items:center;gap:4px}
+.upload-page-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
+.upload-page-hint{text-align:center;padding:40px 0}
+.upload-page-hint svg{opacity:.4}
+.upload-page-hint h3{font-size:18px;font-weight:700;margin-top:12px;color:#3a3a3a}
+body.dark .upload-page-hint h3{color:#e8e4df}
+.upload-page-hint p{font-size:13px;color:#b0a89f;margin-top:6px}
+.upload-page-hint a{color:#c8a87c;text-decoration:underline}
+.upload-page-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.upload-grid-item{position:relative;border-radius:12px;overflow:hidden;aspect-ratio:1;background:#f5f3f0}
+body.dark .upload-grid-item{background:#2a2826}
+.upload-grid-item img,.upload-grid-item video{width:100%;height:100%;object-fit:cover}
+.upload-grid-item .ugi-remove{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.upload-grid-item .ugi-edit{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.upload-grid-item .ugi-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(0,0,0,.1)}
+.upload-grid-item .ugi-bar-fill{height:100%;background:#6a9a6a;width:0;transition:width .3s;border-radius:0 3px 3px 0}
+.upload-grid-item .ugi-status{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:9px;color:#fff;background:rgba(0,0,0,.5);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.upload-grid-item.done{opacity:.85}
+.upload-grid-item.done .ugi-bar-fill{background:#6a9a6a;width:100%}
+.upload-grid-item.fail .ugi-bar-fill{background:#e8a0a0;width:100%}
+.upload-page-album{padding:16px 0}
+.upload-page-album label{font-size:12px;color:#b0a89f;margin-bottom:6px;display:block}
+.upload-page-album select{width:100%;padding:10px 14px;border-radius:12px;border:1px solid #e0dbd5;background:#faf8f6;font-size:13px;color:#3a3a3a;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+body.dark .upload-page-album select{background:#2a2826;border-color:#3a3632;color:#e8e4df}
+.upload-page-btn{display:block;width:200px;margin:16px auto 0;padding:14px;border-radius:14px;border:none;background:#2c2c2c;color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s}
+.upload-page-btn:active{transform:scale(.97)}
+.upload-page-btn:disabled{opacity:.5;cursor:default}
+body.dark .upload-page-btn{background:#e8e4df;color:#1a1a1a}
+.upload-page-pick{display:block;width:100%;padding:48px 20px;border:2px dashed #e0dbd5;border-radius:18px;text-align:center;cursor:pointer;transition:all .2s;background:#faf8f6;margin-bottom:16px}
+.upload-page-pick:active{border-color:#a09488;background:#f0ede8}
+body.dark .upload-page-pick{background:#2a2826;border-color:#3a3632}
+
+/* COPY FORMAT SELECTOR - sub-panel in card detail */
+.fc-copy-panel{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border-radius:24px;overflow-y:auto;padding:20px}
+.fc-copy-panel.show{display:flex}
+body.dark .fc-copy-panel{background:#252525}
+.fc-copy-panel-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:#2c2c2c}
+body.dark .fc-copy-panel-title{color:#e8e4df}
+.fc-copy-panel-back{background:none;border:none;cursor:pointer;padding:4px;color:#999}
+.fc-copy-cat{font-size:11px;font-weight:600;color:#b0a89f;letter-spacing:1px;text-transform:uppercase;margin:12px 0 6px}
+.fc-copy-opt{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;border:1px solid #f0ede8;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.fc-copy-opt:active{background:#f5f3f0}
+.fc-copy-opt.selected{border-color:#c8a87c;background:#fdf9f4}
+body.dark .fc-copy-opt{border-color:#333}
+body.dark .fc-copy-opt:active{background:#333}
+body.dark .fc-copy-opt.selected{border-color:#c8a87c;background:#2a2520}
+.fc-copy-opt-name{font-size:13px;font-weight:500;color:#3a3a3a}
+body.dark .fc-copy-opt-name{color:#e8e4df}
+.fc-copy-opt-radio{width:20px;height:20px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fc-copy-opt.selected .fc-copy-opt-radio{border-color:#c8a87c}
+.fc-copy-opt.selected .fc-copy-opt-radio::after{content:'';width:10px;height:10px;border-radius:50%;background:#c8a87c}
+.fc-copy-panel-link{margin-top:12px;padding:12px;background:#faf8f6;border-radius:10px;font-size:12px;color:#666;word-break:break-all;line-height:1.5;max-height:100px;overflow-y:auto}
+body.dark .fc-copy-panel-link{background:#2a2826;color:#aaa}
+.fc-copy-panel-btn{display:block;width:100%;margin-top:12px;padding:12px;border-radius:12px;border:none;background:#2c2c2c;color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center}
+body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
+.fc-copy-panel-btn.copied{background:#6a9a6a;color:#fff}
+
+/* COMPRESS PREVIEW SIZE */
+.comp-item-preview-size{font-size:10px;color:#c8a87c;margin-top:2px;font-weight:500}
 </style>
 </head>
 <body>
@@ -975,7 +1045,7 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
   </div>
 
   <div class="upload-section fade-up fade-up-4">
-    <div class="upload-area" id="uploadArea">
+    <div class="upload-area" id="uploadArea" onclick="openUploadPage()">
       <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
       <div class="upload-text"><h4>把喜欢的瞬间留在这里</h4><p>支持图片、视频、音频、文档、字体等各类文件</p></div>
     </div>
@@ -1139,7 +1209,7 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
           <div style="flex:1;min-width:0"><div class="fc-bk-tname" id="fcBackName"></div><div class="fc-bk-tmeta" id="fcBackMeta"></div></div>
         </div>
         <div class="fc-bk-menu">
-          <button class="fc-bk-item" onclick="fcCopyLink(null,'all')">
+          <button class="fc-bk-item" onclick="openCopyPanel()">
             <div class="bki-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
             <div class="bki-text"><div class="bki-label">复制链接</div><div class="bki-hint">URL / Markdown / HTML / BBCode</div></div>
             <div class="bki-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>
@@ -1165,6 +1235,30 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
             <div class="bki-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>
           </button>
         </div>
+      </div>
+      <!-- COPY FORMAT SELECTOR PANEL -->
+      <div class="fc-copy-panel" id="fcCopyPanel">
+        <div class="fc-copy-panel-title">
+          <button class="fc-copy-panel-back" onclick="closeCopyPanel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M15 19l-7-7 7-7"/></svg></button>
+          选择链接格式
+        </div>
+        <div class="fc-copy-cat">查看器链接</div>
+        <div class="fc-copy-opt selected" data-fmt="viewer" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">查看器链接</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="url" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">直链</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-cat">HTML 代码</div>
+        <div class="fc-copy-opt" data-fmt="html_img" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">HTML 图片</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="html_full" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">HTML 原图 (带链接)</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="html_medium" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">HTML 中等尺寸 (带链接)</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="html_thumb" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">HTML 缩略图 (带链接)</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-cat">BBCode</div>
+        <div class="fc-copy-opt" data-fmt="bb_img" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">BBCode 原图</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="bb_full" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">BBCode 原图 (带链接)</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="bb_medium" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">BBCode 中等尺寸 (带链接)</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="bb_thumb" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">BBCode 缩略图 (带链接)</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-cat">Markdown</div>
+        <div class="fc-copy-opt" data-fmt="markdown" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">Markdown</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-panel-link" id="fcCopyPanelLink"></div>
+        <button class="fc-copy-panel-btn" id="fcCopyPanelBtn" onclick="doCopyPanelCopy()">复制</button>
       </div>
     </div>
   </div>
@@ -1287,6 +1381,41 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
   </div>
 </div>
 
+<!-- UPLOAD PAGE OVERLAY -->
+<div class="upload-page-overlay" id="uploadPageOverlay">
+  <div class="upload-page-header">
+    <button class="upload-page-back" onclick="closeUploadPage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22"><path d="M15 19l-7-7 7-7"/></svg></button>
+    <span class="upload-page-title">上传图片</span>
+    <button class="upload-page-reset" onclick="uploadPageReset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> 重置</button>
+  </div>
+  <div class="upload-page-body">
+    <div id="uploadPageEmpty">
+      <div class="upload-page-hint">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="48" height="48"><rect x="6" y="6" width="36" height="36" rx="4"/><circle cx="16" cy="16" r="3"/><path d="M42 30L32 20 10 42"/></svg>
+        <h3>触摸图片预览即可编辑任意图片</h3>
+        <p>你可以从<a href="#" onclick="event.preventDefault();uploadPagePickFiles()">你的设备</a>、<a href="#" onclick="event.preventDefault();uploadPagePickFiles()">拍照</a>或<a href="#" onclick="event.preventDefault();uploadPageAddUrl()">添加图片 URL</a>添加更多图片。</p>
+      </div>
+      <div class="upload-page-pick" onclick="uploadPagePickFiles()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="36" height="36" style="opacity:.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="font-size:14px;font-weight:600;color:#6a6a6a;margin-top:8px">选择图片</div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">支持图片、视频、文档等各类文件</div>
+      </div>
+    </div>
+    <div id="uploadPageContent" style="display:none">
+      <div class="upload-page-grid" id="uploadPageGrid"></div>
+      <div class="upload-page-album">
+        <label>相册</label>
+        <select id="uploadPageAlbum"></select>
+      </div>
+      <button class="upload-page-btn" id="uploadPageBtn" onclick="uploadPageStart()">上传</button>
+      <button class="upload-page-pick" onclick="uploadPagePickFiles()" style="margin-top:12px;padding:20px">
+        <div style="font-size:13px;color:#888">+ 添加更多文件</div>
+      </button>
+    </div>
+  </div>
+  <input type="file" id="uploadPageFileInput" multiple accept="*/*" style="display:none">
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- IMAGE COMPRESSOR -->
@@ -1312,7 +1441,7 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
       </div>
       <div class="comp-field">
         <label>格式</label>
-        <select id="compFormat">
+        <select id="compFormat" onchange="if(compFiles.length)compRenderList()">
           <option value="jpeg">JPEG</option>
           <option value="png">PNG</option>
           <option value="webp" selected>WebP</option>
@@ -1321,11 +1450,11 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
       </div>
       <div class="comp-field">
         <label>质量</label>
-        <div class="comp-quality-row"><input type="range" id="compQuality" min="10" max="100" value="75" oninput="document.getElementById('compQualityVal').textContent=this.value+'%'"><span id="compQualityVal">75%</span></div>
+        <div class="comp-quality-row"><input type="range" id="compQuality" min="10" max="100" value="75" oninput="document.getElementById('compQualityVal').textContent=this.value+'%';if(compFiles.length)compRenderList()"><span id="compQualityVal">75%</span></div>
       </div>
       <div class="comp-field">
         <label>最长边</label>
-        <select id="compMaxSize">
+        <select id="compMaxSize" onchange="if(compFiles.length)compRenderList()">
           <option value="0">原尺寸</option>
           <option value="2048">2048px</option>
           <option value="1280">1280px</option>
@@ -1377,6 +1506,7 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
     <div class="pp-stat"><div class="pp-stat-num" id="ppImgCount">0</div><div class="pp-stat-label">图片数量</div></div>
     <div class="pp-stat"><div class="pp-stat-num" id="ppAlbumCount">0</div><div class="pp-stat-label">相册数量</div></div>
     <div class="pp-stat"><div class="pp-stat-num" id="ppStorage">0</div><div class="pp-stat-label">存储 (MB)</div></div>
+    <div class="pp-stat"><div class="pp-stat-num" id="ppQuota">5</div><div class="pp-stat-label">上限 (GB)</div></div>
   </div>
   <div class="pp-divider"></div>
   <div class="pp-actions">
@@ -1730,6 +1860,14 @@ function openProfilePage(){
   refreshAlbumData();
   document.getElementById('ppAlbumCount').textContent=allAlbums.length;
   document.getElementById('ppStorage').textContent=document.getElementById('statStorage')?.textContent||'0';
+  // Set user quota
+  try{
+    const limits=JSON.parse(localStorage.getItem('imgbed_storage_limits')||'{}');
+    const defaultGB=parseFloat(localStorage.getItem('imgbed_default_storage_gb'))||5;
+    const sess=authGetSession();
+    const quotaGB=sess?limits[sess.username]||defaultGB:defaultGB;
+    document.getElementById('ppQuota').textContent=quotaGB;
+  }catch{document.getElementById('ppQuota').textContent='5';}
   // ppAdminAction moved to admin backend
   document.getElementById('profilePage').classList.add('show');
 }
@@ -1780,28 +1918,34 @@ function openMyTokens(){
 async function loadMyTokens(){
   const descEl=document.getElementById('gdDesc');
   try{
-    const r=await fetch('/api/manage/apiTokens',{credentials:'include'});
-    if(!r.ok){descEl.textContent='你没有管理权限，请联系管理员申请令牌。';return;}
+    const r=await fetch('/api/user/tokens',{credentials:'include'});
+    if(!r.ok){descEl.textContent='无法加载令牌，请确认已登录。';return;}
     const d=await r.json(); const tokens=d.tokens||[];
     if(!tokens.length){descEl.innerHTML='暂无令牌。点击下方按钮申请。';return;}
-    descEl.innerHTML='<div style="text-align:left">'+tokens.map(t=>'<div style="background:#faf8f6;padding:10px 14px;border-radius:10px;margin-bottom:6px"><div style="font-size:13px;font-weight:600">'+escHtml(t.name)+'</div><div style="font-size:11px;color:#aaa;margin-top:2px;word-break:break-all">'+escHtml(t.token)+'</div></div>').join('')+'</div>';
+    descEl.innerHTML='<div style="text-align:left">'+tokens.map(t=>'<div style="background:#faf8f6;padding:10px 14px;border-radius:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">'+escHtml(t.name)+'</div><div style="font-size:11px;color:#aaa;margin-top:2px;word-break:break-all">'+escHtml(t.token)+'</div><div style="font-size:10px;color:#bbb;margin-top:2px">权限: '+(t.permissions||[]).join(', ')+'</div></div><button onclick="deleteMyToken(\''+t.id+'\')" style="margin-left:8px;padding:4px 10px;border-radius:6px;border:1px solid #e74c3c;background:#fff;color:#e74c3c;font-size:11px;cursor:pointer;flex-shrink:0">删除</button></div>').join('')+'</div>';
   }catch{descEl.textContent='无法加载令牌信息。';}
 }
 async function requestNewToken(){
   const name=prompt('令牌名称：');
   if(!name) return;
   try{
-    const user=authCurrentUser();
-    const r=await fetch('/api/manage/apiTokens',{
+    const r=await fetch('/api/user/tokens',{
       method:'POST',credentials:'include',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,permissions:['upload'],owner:user?user.username:'user'})
+      body:JSON.stringify({name,permissions:['upload']})
     });
-    if(!r.ok){showToast('申请失败，需要管理员权限');return;}
+    if(!r.ok){showToast('申请失败');return;}
     const d=await r.json();
     if(d.token){alert('令牌已创建（仅显示一次，请妥善保管）：\n\n'+d.token);}
     loadMyTokens();
   }catch{showToast('申请失败');}
+}
+async function deleteMyToken(tokenId){
+  if(!confirm('确定删除此令牌？'))return;
+  try{
+    const r=await fetch('/api/user/tokens?id='+encodeURIComponent(tokenId),{method:'DELETE',credentials:'include'});
+    if(r.ok){showToast('令牌已删除');loadMyTokens();}else{showToast('删除失败');}
+  }catch{showToast('删除失败');}
 }
 
 // CHANGE PASSWORD
@@ -1989,14 +2133,65 @@ document.getElementById('compFileInput').addEventListener('change',(e)=>{
 });
 function compRenderList(){
   const list=document.getElementById('compList');
+  const quality=parseInt(document.getElementById('compQuality').value)/100;
+  const maxSizeVal=parseInt(document.getElementById('compMaxSize').value);
+  const fmt=document.getElementById('compFormat').value;
   list.innerHTML=compFiles.map((f,i)=>{
     const r=compResults[i];
     let status='';
     if(r){status=`<div class="comp-item-status done">完成 ${compFormatSize(r.size)}</div>`;}
     else if(r===false){status='<div class="comp-item-status error">失败</div>';}
     else{status='<div class="comp-item-status pending">等待中</div>';}
-    return `<div class="comp-item"><div class="comp-item-thumb"><img src="${URL.createObjectURL(f)}" loading="lazy"></div><div class="comp-item-info"><div class="comp-item-name">${f.name}</div><div class="comp-item-size">${compFormatSize(f.size)}</div>${status}</div><div class="comp-item-actions">${r?`<button class="comp-item-btn" onclick="compDownloadOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载</button>`:''}<button class="comp-item-btn" onclick="compRemoveOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>删除</button></div></div>`;
+    // Estimate output size when not yet compressed
+    let estHtml='';
+    if(!r && r!==false){
+      const est=compEstimateSize(f,{quality,maxSize:maxSizeVal,format:fmt});
+      estHtml=`<div class="comp-item-preview-size">原始 ${compFormatSize(f.size)} → 预估 ~${compFormatSize(est)}</div>`;
+    } else if(r){
+      estHtml=`<div class="comp-item-preview-size">原始 ${compFormatSize(f.size)} → 实际 ${compFormatSize(r.size)}</div>`;
+    }
+    return `<div class="comp-item"><div class="comp-item-thumb"><img src="${URL.createObjectURL(f)}" loading="lazy"></div><div class="comp-item-info"><div class="comp-item-name">${f.name}</div><div class="comp-item-size">${compFormatSize(f.size)}</div>${estHtml}${status}</div><div class="comp-item-actions">${r?`<button class="comp-item-btn" onclick="compDownloadOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载</button>`:''}<button class="comp-item-btn" onclick="compRemoveOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>删除</button></div></div>`;
   }).join('');
+  // Update estimated total output
+  compUpdateEstimatedStats();
+}
+function compEstimateSize(file,opts){
+  // Rough estimation based on format, quality, and max size
+  let ratio=opts.quality||0.75;
+  const fmt=opts.format||'webp';
+  // Format multipliers (approximate)
+  if(fmt==='webp')ratio*=0.7;
+  else if(fmt==='avif')ratio*=0.5;
+  else if(fmt==='jpeg'||fmt==='jpg')ratio*=0.85;
+  else if(fmt==='png')ratio*=1.1; // PNG often larger
+  // Max size reduction
+  if(opts.maxSize && opts.maxSize>0){
+    // Assume square-ish image, reduction is quadratic
+    const assumedDim=Math.max(2000, Math.sqrt(file.size/3)); // rough pixel estimate
+    if(assumedDim>opts.maxSize){
+      const scale=opts.maxSize/assumedDim;
+      ratio*=scale*scale;
+    }
+  }
+  return Math.max(1024, Math.round(file.size*ratio)); // at least 1KB
+}
+function compUpdateEstimatedStats(){
+  const quality=parseInt(document.getElementById('compQuality').value)/100;
+  const maxSizeVal=parseInt(document.getElementById('compMaxSize').value);
+  const fmt=document.getElementById('compFormat').value;
+  let estTotal=0;
+  compFiles.forEach((f,i)=>{
+    if(compResults[i]&&compResults[i]!==false) estTotal+=compResults[i].size;
+    else estTotal+=compEstimateSize(f,{quality,maxSize:maxSizeVal,format:fmt});
+  });
+  const inputTotal=compFiles.reduce((s,f)=>s+f.size,0);
+  // Update OUTPUT with estimated value when no results yet
+  const hasResults=compResults.some(r=>r&&r!==false);
+  if(!hasResults && compFiles.length>0){
+    document.getElementById('compOutputSize').textContent='~'+compFormatSize(estTotal);
+    const pct=((1-estTotal/inputTotal)*100).toFixed(0);
+    document.getElementById('compSaved').textContent=(pct>=0?'~-':'~+')+Math.abs(pct)+'%';
+  }
 }
 async function runCompress(){
   const fmt=document.getElementById('compFormat').value;
@@ -2072,16 +2267,26 @@ function drawCrop(){
   // Dark background
   ctx.fillStyle='#111';ctx.fillRect(0,0,ww,wh);
   // Draw image
+  const sc=Math.min(ww/cropImg.width,wh/cropImg.height)*cropScale;
+  const imgW=cropImg.width*sc, imgH=cropImg.height*sc;
   ctx.save();
   ctx.translate(ww/2+cropX,wh/2+cropY);
   ctx.rotate(cropRot*Math.PI/180);
-  const sc=Math.min(ww/cropImg.width,wh/cropImg.height)*cropScale;
-  ctx.drawImage(cropImg,-cropImg.width*sc/2,-cropImg.height*sc/2,cropImg.width*sc,cropImg.height*sc);
+  ctx.drawImage(cropImg,-imgW/2,-imgH/2,imgW,imgH);
   ctx.restore();
-  // Crop guide overlay
-  const guideSize=Math.min(ww,wh)*0.75;
-  const gw=cropAspect>=1?guideSize:guideSize*cropAspect;
-  const gh=cropAspect>=1?guideSize/cropAspect:guideSize;
+  // Crop guide: constrained to not exceed image bounds
+  const maxGuideW=Math.min(imgW, ww*0.9);
+  const maxGuideH=Math.min(imgH, wh*0.9);
+  let gw,gh;
+  if(cropAspect>=1){
+    gw=Math.min(maxGuideW, maxGuideH*cropAspect);
+    gh=gw/cropAspect;
+    if(gh>maxGuideH){gh=maxGuideH;gw=gh*cropAspect;}
+  }else{
+    gh=Math.min(maxGuideH, maxGuideW/cropAspect);
+    gw=gh*cropAspect;
+    if(gw>maxGuideW){gw=maxGuideW;gh=gw/cropAspect;}
+  }
   const gx=(ww-gw)/2,gy=(wh-gh)/2;
   // Dark mask outside guide
   ctx.fillStyle='rgba(0,0,0,.55)';
@@ -2090,14 +2295,13 @@ function drawCrop(){
   ctx.fillRect(0,gy,gx,gh); // left
   ctx.fillRect(gx+gw,gy,ww-gx-gw,gh); // right
   if(cropShape==='circle'){
-    // Additional circle mask inside the rect guide
     ctx.save();
     ctx.beginPath();
     ctx.rect(gx,gy,gw,gh);
     ctx.clip();
     ctx.beginPath();
     ctx.ellipse(ww/2,wh/2,gw/2,gh/2,0,0,Math.PI*2);
-    ctx.rect(gx+gw,gy,-(gw),gh); // inverse
+    ctx.rect(gx+gw,gy,-(gw),gh);
     ctx.fillStyle='rgba(0,0,0,.55)';
     ctx.fill('evenodd');
     ctx.restore();
@@ -2118,9 +2322,20 @@ function cropCancel(){document.getElementById('cropOverlay').classList.remove('s
 function cropDone(){
   const wrap=document.getElementById('cropCanvasWrap');
   const ww=wrap.clientWidth,wh=wrap.clientHeight;
-  const guideSize=Math.min(ww,wh)*0.75;
-  const gw=cropAspect>=1?guideSize:guideSize*cropAspect;
-  const gh=cropAspect>=1?guideSize/cropAspect:guideSize;
+  const sc=Math.min(ww/cropImg.width,wh/cropImg.height)*cropScale;
+  const imgW=cropImg.width*sc, imgH=cropImg.height*sc;
+  const maxGuideW=Math.min(imgW, ww*0.9);
+  const maxGuideH=Math.min(imgH, wh*0.9);
+  let gw,gh;
+  if(cropAspect>=1){
+    gw=Math.min(maxGuideW, maxGuideH*cropAspect);
+    gh=gw/cropAspect;
+    if(gh>maxGuideH){gh=maxGuideH;gw=gh*cropAspect;}
+  }else{
+    gh=Math.min(maxGuideH, maxGuideW/cropAspect);
+    gw=gh*cropAspect;
+    if(gw>maxGuideW){gw=maxGuideW;gh=gw/cropAspect;}
+  }
   const gx=(ww-gw)/2,gy=(wh-gh)/2;
   // Output canvas at guide size
   const out=document.createElement('canvas');
@@ -2248,12 +2463,165 @@ function applyQuickEdit(url){
 // UPLOAD
 function initUpload(){
   const area=document.getElementById('uploadArea'),input=document.getElementById('fileInput');
-  area.addEventListener('click',()=>input.click());
+  // area click now opens upload page (set in HTML onclick)
   input.addEventListener('change',(e)=>{if(e.target.files.length>0)handleFiles(Array.from(e.target.files));input.value='';});
   ['dragenter','dragover'].forEach(ev=>area.addEventListener(ev,(e)=>{e.preventDefault();area.classList.add('drag-over');}));
   ['dragleave','drop'].forEach(ev=>area.addEventListener(ev,(e)=>{e.preventDefault();area.classList.remove('drag-over');}));
-  area.addEventListener('drop',(e)=>{const f=Array.from(e.dataTransfer.files);if(f.length>0)handleFiles(f);});
-  document.addEventListener('paste',(e)=>{const f=Array.from(e.clipboardData.items).filter(i=>i.kind==='file').map(i=>i.getAsFile()).filter(Boolean);if(f.length>0){e.preventDefault();handleFiles(f);}});
+  area.addEventListener('drop',(e)=>{const f=Array.from(e.dataTransfer.files);if(f.length>0){uploadPageFiles=Array.from(e.dataTransfer.files);openUploadPage();uploadPageRender();}});
+  document.addEventListener('paste',(e)=>{const f=Array.from(e.clipboardData.items).filter(i=>i.kind==='file').map(i=>i.getAsFile()).filter(Boolean);if(f.length>0){e.preventDefault();uploadPageFiles=f;openUploadPage();uploadPageRender();}});
+  // Upload page file input
+  document.getElementById('uploadPageFileInput').addEventListener('change',(e)=>{
+    if(e.target.files.length>0){uploadPageFiles.push(...Array.from(e.target.files));uploadPageRender();}
+    e.target.value='';
+  });
+}
+
+// ========= UPLOAD PAGE =========
+let uploadPageFiles=[];
+let uploadPageResults=[];
+let uploadPageUploading=false;
+const CONCURRENT_UPLOADS=3;
+
+function openUploadPage(){
+  document.getElementById('uploadPageOverlay').classList.add('show');
+  document.body.style.overflow='hidden';
+  uploadPagePopulateAlbums();
+  if(uploadPageFiles.length>0)uploadPageRender();
+}
+function closeUploadPage(){
+  document.getElementById('uploadPageOverlay').classList.remove('show');
+  document.body.style.overflow='';
+}
+function uploadPageReset(){
+  uploadPageFiles=[];uploadPageResults=[];uploadPageUploading=false;
+  document.getElementById('uploadPageGrid').innerHTML='';
+  document.getElementById('uploadPageContent').style.display='none';
+  document.getElementById('uploadPageEmpty').style.display='';
+  document.getElementById('uploadPageBtn').disabled=false;
+  document.getElementById('uploadPageBtn').textContent='上传';
+}
+function uploadPagePickFiles(){
+  document.getElementById('uploadPageFileInput').click();
+}
+function uploadPageAddUrl(){
+  const url=prompt('输入图片 URL:');
+  if(!url)return;
+  fetch(url).then(r=>r.blob()).then(b=>{
+    const name=url.split('/').pop().split('?')[0]||'image.jpg';
+    const f=new File([b],name,{type:b.type});
+    uploadPageFiles.push(f);uploadPageRender();
+  }).catch(()=>showToast('无法加载该 URL'));
+}
+function uploadPagePopulateAlbums(){
+  loadUserAlbums();
+  const sel=document.getElementById('uploadPageAlbum');
+  let opts='<option value="">不选择相册</option>';
+  userAlbums.forEach((a,i)=>{
+    const vis=a.visibility==='private'?'私密':'公开';
+    opts+=`<option value="${i}">${escHtml(a.name)} (${vis})</option>`;
+  });
+  sel.innerHTML=opts;
+}
+function uploadPageRender(){
+  if(uploadPageFiles.length===0){uploadPageReset();return;}
+  document.getElementById('uploadPageEmpty').style.display='none';
+  document.getElementById('uploadPageContent').style.display='';
+  const grid=document.getElementById('uploadPageGrid');
+  grid.innerHTML=uploadPageFiles.map((f,i)=>{
+    const isImg=isImageFile(f.name,f.type);
+    const isVid=isVideoFile(f.name,f.type);
+    let thumb='';
+    if(isImg)thumb=`<img src="${URL.createObjectURL(f)}" loading="lazy">`;
+    else if(isVid)thumb=`<video src="${URL.createObjectURL(f)}" muted style="width:100%;height:100%;object-fit:cover"></video>`;
+    else thumb=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f3f0">${fileTypeIcon(f.name,f.type)}</div>`;
+    const r=uploadPageResults[i];
+    let statusClass=r==='done'?'done':r==='fail'?'fail':'';
+    let statusText=r==='done'?'✓':r==='fail'?'✗':'';
+    return `<div class="upload-grid-item ${statusClass}" id="ugi_${i}">
+      <button class="ugi-remove" onclick="uploadPageRemove(${i})">&times;</button>
+      ${thumb}
+      <div class="ugi-bar"><div class="ugi-bar-fill" id="ugib_${i}"></div></div>
+      ${statusText?`<div class="ugi-status">${statusText}</div>`:''}
+    </div>`;
+  }).join('');
+}
+function uploadPageRemove(idx){
+  uploadPageFiles.splice(idx,1);
+  uploadPageResults.splice(idx,1);
+  uploadPageRender();
+}
+async function uploadPageStart(){
+  if(uploadPageUploading||!uploadPageFiles.length)return;
+  if(!checkStorageLimit())return;
+  uploadPageUploading=true;
+  const btn=document.getElementById('uploadPageBtn');
+  btn.disabled=true;btn.textContent='上传中...';
+  uploadPageResults=new Array(uploadPageFiles.length).fill(null);
+  const results=[];
+  // Concurrent upload
+  let idx=0;
+  const total=uploadPageFiles.length;
+  async function next(){
+    while(idx<total){
+      const i=idx++;const file=uploadPageFiles[i];
+      const bar=document.getElementById('ugib_'+i);
+      const item=document.getElementById('ugi_'+i);
+      if(bar)bar.style.width='30%';
+      try{
+        const fd=new FormData();fd.append('file',file);
+        if(bar)bar.style.width='60%';
+        const resp=await fetch(API.upload,{method:'POST',body:fd});
+        if(bar)bar.style.width='90%';
+        if(resp.ok){
+          const data=await resp.json();
+          if(bar)bar.style.width='100%';
+          if(item){item.classList.add('done');}
+          uploadPageResults[i]='done';
+          if(data&&data[0]){
+            const src=data[0].src,fullUrl=location.origin+src;
+            results.push({name:file.name,src,fullUrl});
+            allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN')});
+          }
+        }else throw new Error('HTTP '+resp.status);
+      }catch(err){
+        if(bar){bar.style.width='100%';bar.style.background='#e8a0a0';}
+        if(item){item.classList.add('fail');}
+        uploadPageResults[i]='fail';
+      }
+      // Update status text
+      const statusEl=item?.querySelector('.ugi-status');
+      if(!statusEl){
+        const s=document.createElement('div');s.className='ugi-status';
+        s.textContent=uploadPageResults[i]==='done'?'✓':'✗';
+        item?.appendChild(s);
+      }
+    }
+  }
+  const workers=[];
+  for(let w=0;w<CONCURRENT_UPLOADS;w++)workers.push(next());
+  await Promise.all(workers);
+  // Add to album if selected
+  const albumSel=document.getElementById('uploadPageAlbum').value;
+  if(albumSel!==''&&results.length>0){
+    const aIdx=parseInt(albumSel);
+    if(userAlbums[aIdx]){
+      if(!userAlbums[aIdx].imageIdxs)userAlbums[aIdx].imageIdxs=[];
+      results.forEach(r=>{
+        const imgIdx=allImages.findIndex(img=>img.src===r.fullUrl);
+        if(imgIdx>=0)userAlbums[aIdx].imageIdxs.unshift(imgIdx);
+      });
+      saveUserAlbums();
+    }
+  }
+  if(results.length>0){
+    saveUserImages();renderHomeGallery();renderHomeAlbums();
+    document.getElementById('statFiles').textContent=allImages.length;
+  }
+  uploadPageUploading=false;
+  btn.textContent='上传完成 ('+results.filter(Boolean).length+'/'+total+')';
+  setTimeout(()=>{btn.disabled=false;btn.textContent='上传';},3000);
+  // Also show the result sheet
+  if(results.length>0)showResults(results);
 }
 function fileTypeIcon(name,type){
   const ext=(name||'').split('.').pop().toLowerCase();
@@ -3213,6 +3581,7 @@ function openLightbox(src){
 }
 function fcClose(){
   document.getElementById('fcOverlay').classList.remove('show');
+  document.getElementById('fcCopyPanel').classList.remove('show');
   document.body.style.overflow='';
 }
 function fcUpdate(){
@@ -3269,6 +3638,60 @@ function fcAction(action){
   else if(action==='edit') fcEditInfo(img);
   else if(action==='move') fcMoveToAlbum(img);
   else if(action==='delete') fcDelete(img);
+}
+
+// ========= COPY FORMAT PANEL =========
+let _selectedCopyFmt='viewer';
+function openCopyPanel(){
+  _selectedCopyFmt='viewer';
+  document.querySelectorAll('.fc-copy-opt').forEach(el=>el.classList.remove('selected'));
+  document.querySelector('.fc-copy-opt[data-fmt="viewer"]')?.classList.add('selected');
+  updateCopyPanelLink();
+  document.getElementById('fcCopyPanel').classList.add('show');
+}
+function closeCopyPanel(){
+  document.getElementById('fcCopyPanel').classList.remove('show');
+}
+function selectCopyFmt(el){
+  document.querySelectorAll('.fc-copy-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedCopyFmt=el.dataset.fmt;
+  updateCopyPanelLink();
+}
+function getCopyFmtText(){
+  const img=fcList[fcIdx]; if(!img)return '';
+  const fullUrl=img.src.startsWith('http')?img.src:location.origin+img.src;
+  const name=img.name||'image';
+  const viewerUrl=fullUrl; // same as direct for now
+  switch(_selectedCopyFmt){
+    case 'viewer': return fullUrl;
+    case 'url': return fullUrl;
+    case 'html_img': return `<img src="${fullUrl}" alt="${name}">`;
+    case 'html_full': return `<a href="${fullUrl}"><img src="${fullUrl}" alt="${name}"></a>`;
+    case 'html_medium': return `<a href="${fullUrl}"><img src="${fullUrl}" alt="${name}" width="500"></a>`;
+    case 'html_thumb': return `<a href="${fullUrl}"><img src="${fullUrl}" alt="${name}" width="160"></a>`;
+    case 'bb_img': return `[img]${fullUrl}[/img]`;
+    case 'bb_full': return `[url=${fullUrl}][img]${fullUrl}[/img][/url]`;
+    case 'bb_medium': return `[url=${fullUrl}][img width=500]${fullUrl}[/img][/url]`;
+    case 'bb_thumb': return `[url=${fullUrl}][img width=160]${fullUrl}[/img][/url]`;
+    case 'markdown': return `![${name}](${fullUrl})`;
+    default: return fullUrl;
+  }
+}
+function updateCopyPanelLink(){
+  document.getElementById('fcCopyPanelLink').textContent=getCopyFmtText();
+  document.getElementById('fcCopyPanelBtn').textContent='复制';
+  document.getElementById('fcCopyPanelBtn').classList.remove('copied');
+}
+function doCopyPanelCopy(){
+  const text=getCopyFmtText();
+  const btn=document.getElementById('fcCopyPanelBtn');
+  navigator.clipboard.writeText(text).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  });
+  btn.textContent='已复制';btn.classList.add('copied');
+  showToast('已复制到剪贴板');
+  setTimeout(()=>{btn.textContent='复制';btn.classList.remove('copied');},2000);
 }
 
 // --- Rename ---
