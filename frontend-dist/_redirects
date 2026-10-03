@@ -1,0 +1,17 @@
+# Admin backend routes → Vue SPA
+/dashboard    /dashboard.html    200
+/dashboard/*  /dashboard.html    200
+/adminLogin   /dashboard.html    200
+/adminLogin/* /dashboard.html    200
+/customerConfig   /dashboard.html    200
+/customerConfig/* /dashboard.html    200
+/systemConfig     /dashboard.html    200
+/systemConfig/*   /dashboard.html    200
+/blockimg     /dashboard.html    200
+/blockimg/*   /dashboard.html    200
+/whiteliston  /dashboard.html    200
+/whiteliston/* /dashboard.html    200
+/browse       /dashboard.html    200
+/browse/*     /dashboard.html    200
+/login        /dashboard.html    200
+/login/*      /dashboard.html    200
