@@ -122,9 +122,22 @@ img{display:block;max-width:100%}
 /* Result sheet */
 .result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .result-overlay.show{display:flex}
-.result-sheet{width:100%;max-width:460px;background:#fff;border-radius:22px 22px 0 0;padding:24px 24px 40px;max-height:70vh;overflow-y:auto}
-.result-sheet-handle{width:36px;height:4px;background:#e0dbd5;border-radius:2px;margin:0 auto 20px}
-.result-sheet h3{font-size:16px;font-weight:700;color:#2c2c2c;margin-bottom:16px}
+.result-sheet{width:100%;max-width:460px;background:#fff;border-radius:22px 22px 0 0;padding:24px 24px 40px;max-height:75vh;overflow-y:auto}
+.result-sheet-handle{width:36px;height:4px;background:#e0dbd5;border-radius:2px;margin:0 auto 16px}
+.result-header{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.result-header h3{font-size:17px;font-weight:700;color:#2c2c2c;margin:0}
+.result-thumbs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:none;-ms-overflow-style:none}
+.result-thumbs::-webkit-scrollbar{display:none}
+.result-thumbs .rt-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f5f3f0}
+.result-thumbs .rt-thumb img{width:100%;height:100%;object-fit:cover}
+.result-format-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.result-format-row label{font-size:13px;font-weight:600;color:#6a6a6a}
+.result-format-row select{padding:6px 12px;border-radius:8px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:13px;color:#2c2c2c;cursor:pointer;outline:none}
+.result-textarea{width:100%;border:1.5px solid #e0dbd5;border-radius:10px;background:#faf8f6;padding:12px;font-size:12px;color:#3a3a3a;line-height:1.6;resize:none;font-family:monospace;outline:none;box-sizing:border-box}
+.result-actions-row{display:flex;gap:10px;margin-top:12px;margin-bottom:12px}
+.result-copy-all{flex:1;padding:12px 0;border-radius:10px;background:#2c2c2c;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
+.result-copy-all:active{transform:scale(.97);opacity:.9}
+.result-copy-all.copied{background:#4a7a4a}
 .result-link-item{background:#faf8f6;border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .result-link-item .link-label{font-size:11px;color:#b0a89f;margin-bottom:4px}
 .result-link-item .link-value{font-size:12px;color:#3a3a3a;word-break:break-all;line-height:1.4}
@@ -551,6 +564,20 @@ body.dark .moments-empty{background:#2a2826;color:#6a6260}
 body.dark .msg-btn{background:#2a2826;color:#a09890}
 body.dark .upload-item,body.dark .result-link-item{background:#2a2826}
 body.dark .result-sheet,body.dark .settings-sheet{background:#222}
+body.dark .result-header h3{color:#e8e4df}
+body.dark .result-format-row label{color:#aaa}
+body.dark .result-format-row select{background:#2a2826;border-color:#444;color:#e8e4df}
+body.dark .result-textarea{background:#2a2826;border-color:#444;color:#ddd}
+body.dark .result-copy-all{background:#e8e4df;color:#222}
+body.dark .result-thumbs .rt-thumb{background:#2a2826}
+body.dark .album-settings-panel{background:#222}
+body.dark .as-title{color:#e8e4df}
+body.dark .as-close{background:#333;color:#aaa}
+body.dark .as-action-item{background:#2a2826;color:#e8e4df}
+body.dark .as-action-item:active{background:#333}
+body.dark .as-action-item svg{color:#999}
+body.dark .as-action-item.warn{color:#d4a017}
+body.dark .as-action-item.danger{color:#e8564f}
 body.dark .stat-item:not(:last-child)::after{background:#333}
 body.dark .gp-title,body.dark .gp-count,body.dark .gp-sec-title{color:#e8e4df !important}
 body.dark .gp-tab{color:#6a6260}
@@ -1082,7 +1109,24 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
 <!-- RESULT SHEET -->
 <div class="result-overlay" id="resultOverlay"><div class="result-sheet">
   <div class="result-sheet-handle"></div>
-  <h3><svg viewBox="0 0 24 24" fill="none" stroke="#6a9a6a" stroke-width="2" stroke-linecap="round" width="20" height="20" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>上传成功</h3>
+  <div class="result-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#6a9a6a" stroke-width="2" stroke-linecap="round" width="28" height="28"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <h3>上传完成</h3>
+  </div>
+  <div class="result-thumbs" id="resultThumbs"></div>
+  <div class="result-format-row">
+    <label>嵌入代码</label>
+    <select id="resultFormat" onchange="updateResultLinks()">
+      <option value="url">直链</option>
+      <option value="markdown">Markdown</option>
+      <option value="html">HTML 图片</option>
+      <option value="bbcode">BBCode</option>
+    </select>
+  </div>
+  <textarea class="result-textarea" id="resultTextarea" readonly rows="4"></textarea>
+  <div class="result-actions-row">
+    <button class="result-copy-all" id="resultCopyAll" onclick="copyAllResultLinks()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>复制全部链接</button>
+  </div>
   <div id="resultLinks"></div>
 </div></div>
 
@@ -1149,6 +1193,16 @@ body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
     </div>
     <div class="ad-field"><label>相册分类</label>
       <div class="ad-colors" id="adCats" style="gap:6px"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input type="text" id="adCustomCat" placeholder="自定义分类..." style="flex:1;padding:6px 10px;border:1.5px solid #e0dbd5;border-radius:8px;font-size:12px;background:#faf8f6;outline:none">
+        <button onclick="addCustomCatFromDialog()" style="padding:6px 14px;border-radius:8px;background:#2c2c2c;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">添加</button>
+      </div>
+    </div>
+    <div class="ad-field"><label>可见性</label>
+      <div class="ad-visibility" id="adVisibility" style="display:flex;gap:8px">
+        <button class="ap-cat-chip active" data-vis="public" onclick="selectAlbumVis(this)" style="font-size:11px;padding:5px 12px">公开</button>
+        <button class="ap-cat-chip" data-vis="private" onclick="selectAlbumVis(this)" style="font-size:11px;padding:5px 12px">私密</button>
+      </div>
     </div>
     <div class="ad-actions">
       <button class="ad-cancel" onclick="closeAlbumDialog()">取消</button>
@@ -1533,17 +1587,13 @@ function closeProfilePage(){
   document.getElementById('profilePage').classList.remove('show');
 }
 function openSettingsFromProfile(){
-  closeProfilePage();
   document.getElementById('settingsBtn').click();
 }
 function ppChangeAvatar(){
-  closeProfilePage();
   document.getElementById('settingsBtn').click();
-  // Scroll to avatar setting after a short delay
   setTimeout(()=>{const el=document.getElementById('avatarPicker');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},300);
 }
 function ppChangeCover(){
-  closeProfilePage();
   document.getElementById('settingsBtn').click();
   setTimeout(()=>{const el=document.getElementById('coverPicker');if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},300);
 }
@@ -1569,7 +1619,6 @@ function openProfile(){openProfilePage();}
 
 // MY API TOKENS
 function openMyTokens(){
-  closeProfilePage();
   gdShow({
     title:'API 令牌',
     desc:'加载中...',
@@ -1607,7 +1656,6 @@ async function requestNewToken(){
 
 // CHANGE PASSWORD
 function openChangePw(){
-  closeProfilePage();
   document.getElementById('chpwOld').value='';
   document.getElementById('chpwNew').value='';
   document.getElementById('chpwNew2').value='';
@@ -1877,6 +1925,8 @@ function isVideoFile(name,type){
 }
 
 async function handleFiles(files){
+  // Sort by filename (folder order) instead of selection order
+  files=[...files].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
   const pw=document.getElementById('uploadProgress');pw.classList.add('active');pw.innerHTML='';
   const results=[];
   for(const file of files){
@@ -1902,16 +1952,53 @@ async function handleFiles(files){
 
 // RESULT SHEET
 function initResultSheet(){document.getElementById('resultOverlay').addEventListener('click',(e)=>{if(e.target===document.getElementById('resultOverlay'))document.getElementById('resultOverlay').classList.remove('show');});}
+let _uploadResults=[];
 function showResults(results){
-  const el=document.getElementById('resultLinks');el.innerHTML='';
-  results.forEach(r=>{
-    [{l:'URL',v:r.fullUrl},{l:'Markdown',v:`![${r.name}](${r.fullUrl})`},{l:'HTML',v:`<img src="${r.fullUrl}" alt="${r.name}">`},{l:'BBCode',v:`[img]${r.fullUrl}[/img]`}].forEach(f=>{
-      const d=document.createElement('div');d.className='result-link-item';
-      d.innerHTML=`<div style="flex:1;min-width:0"><div class="link-label">${f.l}</div><div class="link-value">${escHtml(f.v)}</div></div><button class="copy-btn">复制</button>`;
-      d.querySelector('.copy-btn').addEventListener('click',function(){copyText(this,f.v);});el.appendChild(d);
-    });
-  });
+  _uploadResults=results;
+  // Thumbnails
+  const thumbs=document.getElementById('resultThumbs');
+  thumbs.innerHTML=results.map(r=>{
+    if(isImageFile(r.name))return `<div class="rt-thumb"><img src="${r.fullUrl}" loading="lazy"></div>`;
+    return `<div class="rt-thumb" style="display:flex;align-items:center;justify-content:center">${fileTypeIcon(r.name)}</div>`;
+  }).join('');
+  document.getElementById('resultFormat').value='url';
+  updateResultLinks();
   document.getElementById('resultOverlay').classList.add('show');
+}
+function updateResultLinks(){
+  const fmt=document.getElementById('resultFormat').value;
+  const lines=_uploadResults.map(r=>{
+    switch(fmt){
+      case 'url': return r.fullUrl;
+      case 'markdown': return `![${r.name}](${r.fullUrl})`;
+      case 'html': return `<img src="${r.fullUrl}" alt="${r.name}">`;
+      case 'bbcode': return `[img]${r.fullUrl}[/img]`;
+      default: return r.fullUrl;
+    }
+  });
+  document.getElementById('resultTextarea').value=lines.join('\n');
+  // Also build per-item links
+  const el=document.getElementById('resultLinks');el.innerHTML='';
+  _uploadResults.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='result-link-item';
+    d.innerHTML=`<div style="flex:1;min-width:0"><div class="link-label">${escHtml(r.name)}</div><div class="link-value">${escHtml(lines[i])}</div></div><button class="copy-btn">复制</button>`;
+    d.querySelector('.copy-btn').addEventListener('click',function(){copyText(this,lines[i]);});
+    el.appendChild(d);
+  });
+}
+function copyAllResultLinks(){
+  const text=document.getElementById('resultTextarea').value;
+  const btn=document.getElementById('resultCopyAll');
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>已复制 ('+_uploadResults.length+' 条)';
+    btn.classList.add('copied');
+    showToast('已复制 '+_uploadResults.length+' 条链接');
+    setTimeout(()=>{btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>复制全部链接';btn.classList.remove('copied');},2500);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    btn.classList.add('copied');showToast('已复制');
+    setTimeout(()=>{btn.classList.remove('copied');},2500);
+  });
 }
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function copyText(btn,text){
@@ -2142,7 +2229,21 @@ let currentAlbumIdx=0;
 let apTabIdx=0;
 let apView='list';
 let apCatFilter='all';
-const albumCategories=['all','\u98ce\u666f','\u4eba\u7269','\u7f8e\u98df','\u65c5\u884c','\u65e5\u5e38','\u5176\u4ed6'];
+const defaultAlbumCategories=['风景','人物','美食','旅行','日常','其他'];
+function getAlbumCategories(){
+  const key=userKey('imgbed_album_cats');
+  try{const s=localStorage.getItem(key);if(s){const arr=JSON.parse(s);if(arr.length)return arr;}}catch{}
+  return [...defaultAlbumCategories];
+}
+function saveAlbumCategories(cats){
+  localStorage.setItem(userKey('imgbed_album_cats'),JSON.stringify(cats));
+}
+function addCustomCategory(name){
+  const cats=getAlbumCategories();
+  if(!cats.includes(name)){cats.push(name);saveAlbumCategories(cats);}
+  return cats;
+}
+const albumCategories=['all',...getAlbumCategories()];
 
 function initAlbumPage(){
   document.getElementById('apBackBtn').addEventListener('click',()=>{
@@ -2438,16 +2539,20 @@ function renderApContent(){
     });
     content.innerHTML=html;
   } else if(apTabIdx===4){
-    // COPY LINKS - sortable list with thumbnail + link
+    // COPY LINKS - sortable list with format selector
     const sorted=[...imgs].sort((a,b)=>a.name.localeCompare(b.name));
-    let html='<div class="ap-copy-list" id="apCopyList">';
+    let html='<div class="ap-copy-format" style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px 12px">';
+    html+='<span style="font-size:13px;font-weight:600;color:#6a6a6a">链接格式</span>';
+    html+='<select id="apCopyFmt" onchange="apUpdateCopyLinks()" style="padding:5px 10px;border-radius:8px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:12px;color:#2c2c2c;outline:none">';
+    html+='<option value="url">直链</option><option value="markdown">Markdown</option><option value="html">HTML 图片</option><option value="bbcode">BBCode</option>';
+    html+='</select></div>';
+    html+='<div class="ap-copy-list" id="apCopyList">';
     sorted.forEach((img,i)=>{
-      html+=`<div class="ap-copy-row" draggable="true" data-cidx="${i}"><div class="ap-copy-drag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></div><div class="ap-copy-thumb"><img src="${img.src}" loading="lazy"></div><div class="ap-copy-link">${img.src}</div></div>`;
+      html+=`<div class="ap-copy-row" draggable="true" data-cidx="${i}" data-src="${img.src}" data-name="${escHtml(img.name)}"><div class="ap-copy-drag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></div><div class="ap-copy-thumb"><img src="${img.src}" loading="lazy"></div><div class="ap-copy-link">${img.src}</div></div>`;
     });
     html+='</div>';
     html+='<button class="ap-copy-all-btn" onclick="apCopyAllLinks()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;margin-right:6px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>一键复制全部链接</button>';
     content.innerHTML=html;
-    // Setup drag-and-drop
     initCopyDrag();
   }
 }
@@ -2490,12 +2595,34 @@ function initCopyDrag(){
   });
 }
 
+function apFormatLink(src,name,fmt){
+  switch(fmt){
+    case 'url': return src;
+    case 'markdown': return `![${name}](${src})`;
+    case 'html': return `<img src="${src}" alt="${name}">`;
+    case 'bbcode': return `[img]${src}[/img]`;
+    default: return src;
+  }
+}
+function apUpdateCopyLinks(){
+  const fmt=document.getElementById('apCopyFmt')?.value||'url';
+  document.querySelectorAll('#apCopyList .ap-copy-row').forEach(row=>{
+    const src=row.dataset.src;
+    const name=row.dataset.name;
+    const linkEl=row.querySelector('.ap-copy-link');
+    if(linkEl)linkEl.textContent=apFormatLink(src,name,fmt);
+  });
+}
 function apCopyAllLinks(){
   const list=document.getElementById('apCopyList');
   if(!list)return;
   const links=[...list.querySelectorAll('.ap-copy-link')].map(el=>el.textContent.trim());
   const text=links.join('\n');
-  navigator.clipboard.writeText(text).then(()=>showToast('已复制 '+links.length+' 条链接')).catch(()=>{
+  const btn=list.parentElement.querySelector('.ap-copy-all-btn');
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast('已复制 '+links.length+' 条链接');
+    if(btn){btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>已复制 ('+links.length+' 条)';setTimeout(()=>{btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px;margin-right:6px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>一键复制全部链接';},2500);}
+  }).catch(()=>{
     const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
     showToast('已复制 '+links.length+' 条链接');
   });
@@ -2894,12 +3021,33 @@ const albumColors=['#e8a87c','#d4756a','#85cdca','#87bdd8','#b0a4e3','#c9b1ff','
 function initAlbumDialog(){
   const grid=document.getElementById('adColors');
   grid.innerHTML=albumColors.map((c,i)=>`<div class="ad-color${i===0?' selected':''}" style="background:${c}" data-color="${c}" onclick="selectAlbumColor(this)"></div>`).join('');
-  // Category chips
-  const cats=document.getElementById('adCats');
-  const catList=albumCategories.filter(c=>c!=='all');
-  cats.innerHTML=catList.map((c,i)=>`<button class="ap-cat-chip" data-cat="${c}" onclick="selectAlbumCat(this)" style="font-size:11px;padding:5px 12px">${c}</button>`).join('');
+  refreshCatChips();
   document.getElementById('albumDialogOverlay').addEventListener('click',(e)=>{if(e.target===document.getElementById('albumDialogOverlay'))closeAlbumDialog();});
   document.getElementById('adNameInput').addEventListener('keydown',(e)=>{if(e.key==='Enter')confirmCreateAlbum();});
+}
+function refreshCatChips(){
+  const cats=document.getElementById('adCats');
+  const catList=getAlbumCategories();
+  cats.innerHTML=catList.map(c=>`<button class="ap-cat-chip" data-cat="${c}" onclick="selectAlbumCat(this)" style="font-size:11px;padding:5px 12px">${c}</button>`).join('');
+  // Also refresh the filter
+  albumCategories.length=0;albumCategories.push('all',...catList);
+}
+function addCustomCatFromDialog(){
+  const inp=document.getElementById('adCustomCat');
+  const name=inp.value.trim();
+  if(!name){showToast('请输入分类名称');return;}
+  addCustomCategory(name);
+  refreshCatChips();
+  inp.value='';
+  // Auto-select the new one
+  const btns=document.querySelectorAll('#adCats .ap-cat-chip');
+  btns.forEach(b=>b.classList.remove('active'));
+  const last=btns[btns.length-1];if(last)last.classList.add('active');
+  showToast('分类「'+name+'」已添加');
+}
+function selectAlbumVis(el){
+  document.querySelectorAll('#adVisibility .ap-cat-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
 }
 function selectAlbumCat(el){
   document.querySelectorAll('#adCats .ap-cat-chip').forEach(c=>c.classList.remove('active'));
@@ -2907,8 +3055,11 @@ function selectAlbumCat(el){
 }
 function openAlbumDialog(){
   document.getElementById('adNameInput').value='';
+  document.getElementById('adCustomCat').value='';
   document.querySelectorAll('.ad-color').forEach((c,i)=>{c.classList.toggle('selected',i===0);});
   document.querySelectorAll('#adCats .ap-cat-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('#adVisibility .ap-cat-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+  refreshCatChips();
   document.getElementById('albumDialogOverlay').classList.add('show');
   setTimeout(()=>document.getElementById('adNameInput').focus(),100);
 }
@@ -2929,7 +3080,9 @@ function confirmCreateAlbum(){
   if(userAlbums.find(a=>a.name===name)){showToast('已存在同名相册');return;}
   const catEl=document.querySelector('#adCats .ap-cat-chip.active');
   const category=catEl?catEl.dataset.cat:'';
-  userAlbums.push({name,color,category,imageIdxs:[],createdAt:Date.now()});
+  const visEl=document.querySelector('#adVisibility .ap-cat-chip.active');
+  const visibility=visEl?visEl.dataset.vis:'public';
+  userAlbums.push({name,color,category,visibility,imageIdxs:[],createdAt:Date.now()});
   saveUserAlbums();
   closeAlbumDialog();
   renderHomeAlbums();
