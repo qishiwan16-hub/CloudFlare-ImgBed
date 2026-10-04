@@ -1526,14 +1526,47 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
             <option value="short">短链</option>
           </select>
         </div>
-        <div class="comp-actions">
-          <button class="comp-btn primary" id="migrateStartBtn" onclick="migrateStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>开始迁移</button>
-          <button class="comp-btn" id="migrateDownloadBtn" onclick="migrateDownload()" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载文件</button>
-          <button class="comp-btn" onclick="migrateClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>
+        <!-- 迁移前：进度条+开始按钮 -->
+        <div id="migrateBeforePanel">
+          <div id="migrateProgress" style="display:none;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:4px"><span id="migrateProgressText">迁移中...</span><span id="migrateProgressNum">0/0</span></div>
+            <div style="height:4px;background:#e8e4df;border-radius:2px;overflow:hidden"><div id="migrateProgressBar" style="height:100%;background:#2c2c2c;border-radius:2px;width:0%;transition:width .3s"></div></div>
+          </div>
+          <div class="comp-actions">
+            <button class="comp-btn primary" id="migrateStartBtn" onclick="migrateStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>开始迁移</button>
+            <button class="comp-btn" onclick="migrateClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>
+          </div>
         </div>
-        <div class="comp-list" id="migrateList"></div>
+        <!-- 迁移后：查看图片+下载文件 -->
+        <div id="migrateAfterPanel" style="display:none">
+          <div class="comp-actions">
+            <button class="comp-btn primary" onclick="migrateShowLinks()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>查看图片</button>
+            <button class="comp-btn" onclick="migrateDownload()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载文件</button>
+            <button class="comp-btn" onclick="migrateClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- MIGRATE LINKS POPUP -->
+<div class="gd-overlay" id="migrateLinkOverlay" style="display:none;z-index:300" onclick="if(event.target===this)closeMigrateLinks()">
+  <div class="gd-popup" style="max-height:80vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #e8e4df">
+      <span style="font-size:15px;font-weight:700">迁移结果</span>
+      <button onclick="closeMigrateLinks()" style="border:none;background:none;cursor:pointer;padding:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div style="padding:8px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0ede9">
+      <label style="font-size:12px;color:#999;white-space:nowrap">链接格式</label>
+      <select id="migrateLinkFmtPopup" onchange="migrateRenderPopup()" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:12px">
+        <option value="original">原始文件名</option>
+        <option value="timestamp">时间戳</option>
+        <option value="short">短链</option>
+      </select>
+      <button onclick="migrateCopyAll()" style="border:none;background:#2c2c2c;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">一键复制</button>
+    </div>
+    <div id="migrateLinkList" style="flex:1;overflow-y:auto;padding:0 20px"></div>
   </div>
 </div>
 
@@ -2425,48 +2458,35 @@ function openMigrator(){
 }
 
 // ===== FILE MIGRATOR =====
-const MIGRATE_IMG_REGEX=/(https?:\/\/[^\s"'<>)\]]+?\.(?:png|jpg|jpeg|gif|webp|avif|bmp|svg|ico|tiff?)(?:\?[^\s"'<>)\]]*)?)|(\!\[[^\]]*\]\((https?:\/\/[^)]+)\))|(<img[^>]+src=["'](https?:\/\/[^"']+)["'])/gi;
-let _migrateFile=null,_migrateText='',_migrateLinks=[],_migrateResults=[];
+let _migrateFile=null,_migrateOrigText='',_migrateText='',_migrateLinks=[];
 
 document.getElementById('migrateFileInput').addEventListener('change',(e)=>{
   const f=e.target.files[0];if(!f)return;
   _migrateFile=f;
   const reader=new FileReader();
   reader.onload=()=>{
+    _migrateOrigText=reader.result;
     _migrateText=reader.result;
-    // Extract all image URLs
     _migrateLinks=[];
     const seen=new Set();
     let m;
     const re=/(https?:\/\/[^\s"'<>)\]]+?\.(?:png|jpg|jpeg|gif|webp|avif|bmp|svg|ico|tiff?)(?:\?[^\s"'<>)\]]*)?)/gi;
-    while((m=re.exec(_migrateText))!==null){
+    while((m=re.exec(_migrateOrigText))!==null){
       const url=m[1];
       if(!seen.has(url)){seen.add(url);_migrateLinks.push({url,status:'pending',newUrl:'',aliases:null});}
     }
-    _migrateResults=[];
     document.getElementById('migrateFileName').textContent=f.name;
     document.getElementById('migrateLinkCount').textContent=_migrateLinks.length;
     document.getElementById('migrateReplacedCount').textContent='0';
     document.getElementById('migrateUploadArea').style.display='none';
     document.getElementById('migrateContent').style.display='';
-    document.getElementById('migrateStartBtn').style.display='';
-    document.getElementById('migrateDownloadBtn').style.display='none';
-    migrateRenderList();
+    document.getElementById('migrateBeforePanel').style.display='';
+    document.getElementById('migrateAfterPanel').style.display='none';
+    document.getElementById('migrateProgress').style.display='none';
   };
   reader.readAsText(f);
   e.target.value='';
 });
-
-function migrateRenderList(){
-  const fmt=document.getElementById('migrateLinkFmt').value;
-  const el=document.getElementById('migrateList');
-  el.innerHTML=_migrateLinks.map((link,i)=>{
-    const displayUrl=link.status==='done'?migrateGetFmtUrl(link,fmt):link.url;
-    const statusIcon=link.status==='done'?'<span style="color:#6a9a6a">✓</span>':link.status==='error'?'<span style="color:#c06060">✗</span>':link.status==='uploading'?'<span style="color:#d4a017">⏳</span>':'<span style="color:#999">○</span>';
-    const thumb=link.status==='done'&&link.newUrl?`<img src="${link.newUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0">`:`<div style="width:40px;height:40px;border-radius:6px;background:#f0ede9;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0ede9">${thumb}<div style="flex:1;min-width:0;overflow:hidden"><div style="font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${displayUrl}</div><div style="font-size:10px;color:#aaa;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${link.url}</div></div><div style="flex-shrink:0">${statusIcon}</div>${link.status==='done'?`<button onclick="migrateCopyLink(${i})" style="flex-shrink:0;border:none;background:#f5f2ee;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer">复制</button>`:''}</div>`;
-  }).join('');
-}
 
 function migrateGetFmtUrl(link,fmt){
   const al=link.aliases||{};
@@ -2477,25 +2497,27 @@ function migrateGetFmtUrl(link,fmt){
   return link.newUrl;
 }
 
-function migrateUpdateDisplay(){migrateRenderList();}
+function migrateUpdateDisplay(){}
 
 async function migrateStart(){
   if(!_migrateLinks.length){showToast('没有找到图片链接');return;}
-  document.getElementById('migrateStartBtn').disabled=true;
-  document.getElementById('migrateStartBtn').textContent='迁移中...';
+  const btn=document.getElementById('migrateStartBtn');
+  btn.disabled=true;
+  document.getElementById('migrateProgress').style.display='';
   let replaced=0;
-  for(let i=0;i<_migrateLinks.length;i++){
+  const total=_migrateLinks.length;
+  for(let i=0;i<total;i++){
     const link=_migrateLinks[i];
-    if(link.status==='done')continue;
+    if(link.status==='done'){replaced++;continue;}
     link.status='uploading';
-    migrateRenderList();
+    document.getElementById('migrateProgressText').textContent='正在迁移第 '+(i+1)+' 张...';
+    document.getElementById('migrateProgressNum').textContent=(i+1)+'/'+total;
+    document.getElementById('migrateProgressBar').style.width=((i+1)/total*100)+'%';
     try{
-      // Fetch the image
       const resp=await fetch(link.url);
       if(!resp.ok)throw new Error('HTTP '+resp.status);
       const blob=await resp.blob();
       const fileName=link.url.split('/').pop().split('?')[0]||'image.png';
-      // Upload to our server
       const fd=new FormData();
       fd.append('file',new File([blob],fileName,{type:blob.type||'image/png'}));
       const upResp=await fetch(API.upload,{method:'POST',body:fd,credentials:'include'});
@@ -2506,7 +2528,6 @@ async function migrateStart(){
         link.aliases=data[0].aliases||null;
         link.status='done';
         replaced++;
-        // Also add to allImages
         allImages.unshift({src:link.newUrl,name:fileName,date:new Date().toLocaleDateString('zh-CN'),size:blob.size||0,aliases:link.aliases});
       }else throw new Error('Bad response');
     }catch(e){
@@ -2514,12 +2535,10 @@ async function migrateStart(){
       link.errorMsg=e.message;
     }
     document.getElementById('migrateReplacedCount').textContent=replaced;
-    migrateRenderList();
   }
-  // Save images
+  // Save images + auto-create album
   if(replaced>0){
     saveUserImages();
-    // Auto-create album named after file
     const albumName=(_migrateFile?.name||'迁移').replace(/\.[^.]+$/,'');
     const existingAlbum=userAlbums.find(a=>a.name===albumName);
     if(!existingAlbum){
@@ -2532,43 +2551,53 @@ async function migrateStart(){
     refreshAlbumData();
     updateHomeStats();renderHomeGallery();renderHomeAlbums();
   }
-  // Build replaced text
+  // Build replaced text from original
   const fmt=document.getElementById('migrateLinkFmt').value;
-  let newText=_migrateText;
+  _migrateText=_migrateOrigText;
   _migrateLinks.forEach(link=>{
     if(link.status==='done'){
-      const replaceUrl=migrateGetFmtUrl(link,fmt);
-      newText=newText.split(link.url).join(replaceUrl);
+      _migrateText=_migrateText.split(link.url).join(migrateGetFmtUrl(link,fmt));
     }
   });
-  _migrateText=newText;
-  document.getElementById('migrateStartBtn').disabled=false;
-  document.getElementById('migrateStartBtn').textContent='开始迁移';
-  document.getElementById('migrateDownloadBtn').style.display='';
-  showToast('迁移完成: '+replaced+'/'+_migrateLinks.length);
+  btn.disabled=false;
+  document.getElementById('migrateProgress').style.display='none';
+  document.getElementById('migrateBeforePanel').style.display='none';
+  document.getElementById('migrateAfterPanel').style.display='';
+  showToast('迁移完成: '+replaced+'/'+total);
 }
 
-function migrateDownload(){
-  const fmt=document.getElementById('migrateLinkFmt').value;
-  let text=_migrateText;
-  // Re-apply replacements with current format
-  _migrateLinks.forEach(link=>{
-    if(link.status==='done'){
-      // The text already has the last format applied; need original text
-    }
+// === Migrate Links Popup ===
+function migrateShowLinks(){
+  document.getElementById('migrateLinkFmtPopup').value=document.getElementById('migrateLinkFmt').value;
+  migrateRenderPopup();
+  document.getElementById('migrateLinkOverlay').style.display='flex';
+}
+function closeMigrateLinks(){
+  document.getElementById('migrateLinkOverlay').style.display='none';
+}
+function migrateRenderPopup(){
+  const fmt=document.getElementById('migrateLinkFmtPopup').value;
+  const el=document.getElementById('migrateLinkList');
+  el.innerHTML=_migrateLinks.map((link,i)=>{
+    const displayUrl=link.status==='done'?migrateGetFmtUrl(link,fmt):link.url;
+    const statusBadge=link.status==='done'?'<span style="font-size:10px;color:#6a9a6a;background:#e8f5e8;padding:1px 6px;border-radius:4px">✓</span>':link.status==='error'?'<span style="font-size:10px;color:#c06060;background:#fde8e8;padding:1px 6px;border-radius:4px">✗</span>':'<span style="font-size:10px;color:#999;background:#f0ede9;padding:1px 6px;border-radius:4px">未迁移</span>';
+    const thumb=link.status==='done'&&link.newUrl?'<img src="'+link.newUrl+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">':'<div style="width:44px;height:44px;border-radius:8px;background:#f0ede9;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f5f2ee">'+thumb+'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:10px;color:#bbb">#'+(i+1)+'</span>'+statusBadge+'</div><div style="font-size:12px;color:#2c2c2c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+displayUrl+'">'+displayUrl+'</div><div style="font-size:10px;color:#bbb;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+link.url+'">← '+link.url+'</div></div>'+(link.status==='done'?'<button onclick="migrateCopyLink('+i+')" style="flex-shrink:0;border:none;background:#f5f2ee;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">复制</button>':'')+'</div>';
+  }).join('');
+}
+function migrateCopyAll(){
+  const fmt=document.getElementById('migrateLinkFmtPopup').value;
+  const lines=_migrateLinks.filter(l=>l.status==='done').map(l=>migrateGetFmtUrl(l,fmt));
+  const text=lines.join('\n');
+  navigator.clipboard.writeText(text).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
   });
-  const blob=new Blob([_migrateText],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=(_migrateFile?.name||'migrated.txt');
-  a.click();
-  URL.revokeObjectURL(a.href);
+  showToast('已复制 '+lines.length+' 条链接');
 }
-
 function migrateCopyLink(idx){
   const link=_migrateLinks[idx];
   if(!link||link.status!=='done')return;
-  const fmt=document.getElementById('migrateLinkFmt').value;
+  const fmt=document.getElementById('migrateLinkFmtPopup').value||document.getElementById('migrateLinkFmt').value;
   const url=migrateGetFmtUrl(link,fmt);
   navigator.clipboard.writeText(url).catch(()=>{
     const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
@@ -2576,13 +2605,29 @@ function migrateCopyLink(idx){
   showToast('已复制');
 }
 
-function migrateClear(){
-  _migrateFile=null;_migrateText='';_migrateLinks=[];_migrateResults=[];
-  document.getElementById('migrateUploadArea').style.display='';
-  document.getElementById('migrateContent').style.display='none';
-  document.getElementById('migrateList').innerHTML='';
+function migrateDownload(){
+  // Rebuild text with current format
+  const fmt=document.getElementById('migrateLinkFmt').value;
+  let text=_migrateOrigText;
+  _migrateLinks.forEach(link=>{
+    if(link.status==='done'){
+      text=text.split(link.url).join(migrateGetFmtUrl(link,fmt));
+    }
+  });
+  const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(_migrateFile?.name||'migrated.txt');
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
+function migrateClear(){
+  _migrateFile=null;_migrateOrigText='';_migrateText='';_migrateLinks=[];
+  document.getElementById('migrateUploadArea').style.display='';
+  document.getElementById('migrateContent').style.display='none';
+  closeMigrateLinks();
+}
 // ===== IMAGE CROPPER =====
 let cropImg=null,cropX=0,cropY=0,cropScale=1,cropRot=0,cropAspect=1,cropShape='circle',cropCallback=null;
 function openCropper(src,opts){
