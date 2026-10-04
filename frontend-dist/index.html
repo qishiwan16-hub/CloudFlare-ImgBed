@@ -3712,11 +3712,16 @@ function selectAll(){
 function deleteSelected(){
   if(!selectedSet.size){showToast('请先选择图片');return;}
   const count=selectedSet.size;
-  Array.from(selectedSet).map(Number).sort((a,b)=>b-a).forEach(i=>allImages.splice(i,1));
-  saveUserImages();
-  exitSelectMode();renderGalleryPage();renderHomeGallery();renderHomeAlbums();
-  updateHomeStats();
-  showToast(`已删除 ${count} 张图片`);
+  gdShow({title:'删除图片',desc:'确定要删除选中的 '+count+' 张图片吗？\n此操作不可撤销。',
+    confirm:'删除',cancel:'取消',confirmClass:'danger',
+    onConfirm:()=>{
+      Array.from(selectedSet).map(Number).sort((a,b)=>b-a).forEach(i=>allImages.splice(i,1));
+      saveUserImages();
+      exitSelectMode();renderGalleryPage();renderHomeGallery();renderHomeAlbums();
+      updateHomeStats();
+      showToast('已删除 '+count+' 张图片');
+    }
+  });
 }
 
 // ===================== ALBUM PAGE =====================
@@ -3949,13 +3954,44 @@ function selectAllAlbums(){
 function deleteSelectedAlbums(){
   if(!albumSelectedSet.size){showToast('请先选择相册');return;}
   const count=albumSelectedSet.size;
-  // userAlbums index = allAlbums index - 1 (skip "未分类")
-  const toDelete=[...albumSelectedSet].map(ri=>ri-1).filter(i=>i>=0).sort((a,b)=>b-a);
-  toDelete.forEach(i=>{if(i<userAlbums.length)userAlbums.splice(i,1);});
-  saveUserAlbums();
-  exitAlbumSelectMode();
-  refreshAlbumData();renderAlbumList();renderHomeAlbums();
-  showToast(`已删除 ${count} 个相册`);
+  const toDelete=[...albumSelectedSet].map(ri=>ri-1).filter(i=>i>=0&&i<userAlbums.length).sort((a,b)=>b-a);
+  if(!toDelete.length){showToast('系统相册无法删除');return;}
+  const totalImgs=toDelete.reduce((s,i)=>(s+(userAlbums[i].imageSrcs||[]).length),0);
+  const doDelete=(keepImgs)=>{
+    if(!keepImgs){
+      const allSrcs=new Set();
+      toDelete.forEach(i=>(userAlbums[i].imageSrcs||[]).forEach(s=>allSrcs.add(s)));
+      if(allSrcs.size)allImages=allImages.filter(img=>!allSrcs.has(img.src));
+      saveUserImages();
+    }
+    toDelete.forEach(i=>userAlbums.splice(i,1));
+    saveUserAlbums();
+    exitAlbumSelectMode();
+    refreshAlbumData();renderAlbumList();renderHomeAlbums();renderHomeGallery();updateHomeStats();
+    showToast(keepImgs?'已删除 '+count+' 个相册，图片已保留':'已删除 '+count+' 个相册及所有图片');
+  };
+  gdShow({title:'删除相册',desc:'确定要删除选中的 '+count+' 个相册吗？'+(totalImgs?'\n共有 '+totalImgs+' 张图片。':''),
+    confirm:'',cancel:'',
+    onConfirm:()=>{}
+  });
+  setTimeout(()=>{
+    const popup=document.querySelector('#gdOverlay.show .gd-popup');
+    if(!popup)return;
+    const actions=popup.querySelector('.gd-actions');
+    if(!actions)return;
+    actions.innerHTML='';
+    const btn1=document.createElement('button');btn1.className='gd-btn';btn1.textContent='保留图片';btn1.style.cssText='font-weight:600';
+    btn1.onclick=()=>{gdClose();doDelete(true);};
+    actions.appendChild(btn1);
+    if(totalImgs){
+      const btn2=document.createElement('button');btn2.className='gd-btn';btn2.textContent='连图片一起删除';btn2.style.cssText='color:#c06060;font-weight:600';
+      btn2.onclick=()=>{gdClose();doDelete(false);};
+      actions.appendChild(btn2);
+    }
+    const btn3=document.createElement('button');btn3.className='gd-btn';btn3.textContent='取消';
+    btn3.onclick=()=>gdClose();
+    actions.appendChild(btn3);
+  },50);
 }
 let albumLpTimer=null,albumLpMoved=false;
 function albumCardClick(ri){
@@ -4134,14 +4170,40 @@ function deleteSelectedApImgs(){
   const ui=getUserAlbumIdx();
   const count=apImgSelectedSet.size;
   const idxs=[...apImgSelectedSet].map(Number).sort((a,b)=>b-a);
-  // Remove from album's imageSrcs
-  if(ui>=0&&userAlbums[ui]){
-    idxs.forEach(i=>{if(userAlbums[ui].imageSrcs)userAlbums[ui].imageSrcs.splice(i,1);});
-    saveUserAlbums();refreshAlbumData();
-  }
-  exitApImgSelectMode();
-  renderAlbumDetail();renderHomeAlbums();
-  showToast('已从相册移除 '+count+' 张图片');
+  const doRemove=(alsoDelete)=>{
+    if(ui>=0&&userAlbums[ui]){
+      const removedSrcs=idxs.map(i=>(userAlbums[ui].imageSrcs||[])[i]).filter(Boolean);
+      idxs.forEach(i=>{if(userAlbums[ui].imageSrcs)userAlbums[ui].imageSrcs.splice(i,1);});
+      saveUserAlbums();refreshAlbumData();
+      if(alsoDelete&&removedSrcs.length){
+        const delSet=new Set(removedSrcs);
+        allImages=allImages.filter(img=>!delSet.has(img.src));
+        saveUserImages();updateHomeStats();
+      }
+    }
+    exitApImgSelectMode();
+    renderAlbumDetail();renderHomeAlbums();renderHomeGallery();
+    showToast(alsoDelete?'已删除 '+count+' 张图片':'已从相册移除 '+count+' 张图片');
+  };
+  gdShow({title:'删除图片',desc:'已选中 '+count+' 张图片',confirm:'',cancel:'',onConfirm:()=>{}});
+  setTimeout(()=>{
+    const popup=document.querySelector('#gdOverlay.show .gd-popup');
+    if(!popup)return;
+    const actions=popup.querySelector('.gd-actions');
+    if(!actions)return;
+    actions.innerHTML='';
+    if(ui>=0){
+      const btn1=document.createElement('button');btn1.className='gd-btn';btn1.textContent='仅移出相册';btn1.style.cssText='font-weight:600';
+      btn1.onclick=()=>{gdClose();doRemove(false);};
+      actions.appendChild(btn1);
+    }
+    const btn2=document.createElement('button');btn2.className='gd-btn';btn2.textContent='彻底删除图片';btn2.style.cssText='color:#c06060;font-weight:600';
+    btn2.onclick=()=>{gdClose();doRemove(true);};
+    actions.appendChild(btn2);
+    const btn3=document.createElement('button');btn3.className='gd-btn';btn3.textContent='取消';
+    btn3.onclick=()=>gdClose();
+    actions.appendChild(btn3);
+  },50);
 }
 function bindApImgEvents(container){
   container.querySelectorAll('.ap-gimg[data-aidx]').forEach(item=>{
@@ -4492,10 +4554,10 @@ function asDelete(){
   const ui=getUserAlbumIdx();
   if(ui<0){showToast('系统相册无法删除');return;}
   const album=allAlbums[currentAlbumIdx];
-  const imgCount=(album.imageSrcs||[]).length;
+  const imgCount=(album.images||[]).length;
   const doDelete=(keepImgs)=>{
     if(!keepImgs){
-      const srcs=new Set(album.imageSrcs||[]);
+      const srcs=new Set((userAlbums[ui].imageSrcs||[]));
       if(srcs.size)allImages=allImages.filter(img=>!srcs.has(img.src));
       saveUserImages();
     }
@@ -4503,28 +4565,29 @@ function asDelete(){
     saveUserAlbums();refreshAlbumData();
     apView='list';renderAlbumPage();closeAlbumSettings();
     renderHomeAlbums();renderHomeGallery();updateHomeStats();
-    document.getElementById('gdOverlay').classList.remove('show');
     showToast(keepImgs?'相册已删除，图片已保留':'相册和图片已全部删除');
   };
-  // Build custom 3-button dialog
   gdShow({title:'删除相册',desc:'确定要删除「'+album.name+'」吗？'+(imgCount?'\n相册内有 '+imgCount+' 张图片。':''),
-    confirm:'保留图片',cancel:'取消',
-    onConfirm:()=>doDelete(true)
+    confirm:'',cancel:'',onConfirm:()=>{}
   });
-  if(imgCount){
-    setTimeout(()=>{
-      const popup=document.querySelector('#gdOverlay.show .gd-popup');
-      if(!popup)return;
-      const actions=popup.querySelector('.gd-actions');
-      if(!actions)return;
-      const delBtn=document.createElement('button');
-      delBtn.className='gd-btn';
-      delBtn.textContent='连图片一起删除';
-      delBtn.style.cssText='color:#c06060;font-weight:600';
-      delBtn.onclick=()=>doDelete(false);
-      actions.insertBefore(delBtn,actions.lastElementChild);
-    },50);
-  }
+  setTimeout(()=>{
+    const popup=document.querySelector('#gdOverlay.show .gd-popup');
+    if(!popup)return;
+    const actions=popup.querySelector('.gd-actions');
+    if(!actions)return;
+    actions.innerHTML='';
+    const btn1=document.createElement('button');btn1.className='gd-btn';btn1.textContent='保留图片';btn1.style.cssText='font-weight:600';
+    btn1.onclick=()=>{gdClose();doDelete(true);};
+    actions.appendChild(btn1);
+    if(imgCount){
+      const btn2=document.createElement('button');btn2.className='gd-btn';btn2.textContent='连图片一起删除';btn2.style.cssText='color:#c06060;font-weight:600';
+      btn2.onclick=()=>{gdClose();doDelete(false);};
+      actions.appendChild(btn2);
+    }
+    const btn3=document.createElement('button');btn3.className='gd-btn';btn3.textContent='取消';
+    btn3.onclick=()=>gdClose();
+    actions.appendChild(btn3);
+  },50);
 }
 
 function fcSetCategory(src){
