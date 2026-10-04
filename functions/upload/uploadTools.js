@@ -518,7 +518,6 @@ export async function createFileAliases(context, primaryId, fileName, fileExt) {
     
     // 存储别名 → 指向主文件ID
     const aliasMetadata = { isAlias: true, target: primaryId };
-    console.log('[createFileAliases] primaryId=', primaryId, 'tsId=', tsId, 'shortId=', shortId);
     await db.put(tsId, '', { metadata: aliasMetadata });
     await db.put(shortId, '', { metadata: aliasMetadata });
     

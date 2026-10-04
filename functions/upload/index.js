@@ -201,12 +201,9 @@ async function processFileUpload(context, formdata = null) {
             metadata.AliasTimestamp = aliases.tsId;
             metadata.AliasShort = aliases.shortId;
             context.fileAliases = aliases;
-            console.log('[upload] aliases OK:', aliases.tsId, aliases.shortId);
-        } else {
-            console.log('[upload] aliases returned empty:', JSON.stringify(aliases));
         }
     } catch (aliasErr) {
-        console.log('[upload] createFileAliases error:', aliasErr.message);
+        // alias creation failed silently, upload continues without aliases
     }
 
     // 获得返回链接格式, default为返回/file/id, full为返回完整链接
@@ -297,7 +294,6 @@ function buildUploadResponse(context, returnLink) {
     }
     // 返回三种链接
     const aliases = context.fileAliases;
-    console.log('[buildUploadResponse] aliases=', JSON.stringify(aliases), 'returnLink=', returnLink);
     if (aliases) {
         const base = returnLink.substring(0, returnLink.lastIndexOf('/') + 1);
         result.aliases = {

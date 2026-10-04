@@ -4425,10 +4425,11 @@ function fcUpdate(){
   aliasBox.style.display='';
   const origin=location.origin;
   const fmtA=a=>a?(a.startsWith('/')?origin+a:a):'';
+  const shortName=u=>{if(!u)return '—';try{return decodeURIComponent(u.split('/').pop())}catch(e){return u.split('/').pop()}};
   const al=img.aliases||{};
-  document.getElementById('fcAliasOriginal').textContent=fmtA(al.original)||fullUrl;
-  document.getElementById('fcAliasTimestamp').textContent=fmtA(al.timestamp)||'—';
-  document.getElementById('fcAliasShort').textContent=fmtA(al.short)||'—';
+  document.getElementById('fcAliasOriginal').textContent=shortName(fmtA(al.original)||fullUrl);
+  document.getElementById('fcAliasTimestamp').textContent=shortName(fmtA(al.timestamp));
+  document.getElementById('fcAliasShort').textContent=shortName(fmtA(al.short));
   // Dots
   const max=Math.min(fcList.length,9);
   document.getElementById('fcDots').innerHTML=Array.from({length:max},(_,i)=>`<span class="fc-dot${i===fcIdx?' active':''}"></span>`).join('');
