@@ -1726,6 +1726,16 @@ function authLogin(){
   document.getElementById('statFiles').textContent=allImages.length;
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
+  // Sync: try pull from server, if empty push local
+  _syncPullAll().then(pulled=>{
+    if(pulled){
+      applyConfig();
+      document.getElementById('statFiles').textContent=allImages.length;
+      renderHomeGallery(); renderHomeAlbums(); onAuthReady();
+    }else{
+      _syncPushAll();
+    }
+  });
 }
 
 function authLogout(){
@@ -1759,12 +1769,23 @@ function authCheckLogin(){
     switchAuthTab('login');
     return false;
   }
-  // User exists - load their data
+  // User exists - load their data (localStorage first for speed)
   loadConfig(); applyConfig(); initTheme();
   loadUserImages(); loadUserAlbums();
   document.getElementById('statFiles').textContent=allImages.length;
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
+  // Background sync from server (overwrites local if server has data)
+  _syncPullAll().then(pulled=>{
+    if(pulled){
+      applyConfig();
+      document.getElementById('statFiles').textContent=allImages.length;
+      renderHomeGallery(); renderHomeAlbums(); onAuthReady();
+    }else{
+      // Server empty → push local data up for first time
+      _syncPushAll();
+    }
+  });
   return true;
 }
 
@@ -2017,7 +2038,78 @@ function adminDelete(uname){
 }
 
 const DEFAULT_CONFIG = { name:'我的图床', bio:'把喜欢的瞬间，留在这里。', avatar:'/static/media/logo.png', cover:'/img/background-light.f17603bc.jpg', galleryCount:6, avatarShape:'circle', theme:'auto' };
-const API = { upload:'/upload', list:'/api/manage/list', fileBase:'/file/' };
+const API = { upload:'/upload', list:'/api/manage/list', fileBase:'/file/', userData:'/api/user/data' };
+
+// ===== SERVER SYNC ENGINE =====
+// Debounced writes: localStorage is instant, server push is batched
+let _syncTimers={};
+let _syncPending={};
+function _syncDebounce(type, data){
+  _syncPending[type]=data;
+  if(_syncTimers[type])clearTimeout(_syncTimers[type]);
+  _syncTimers[type]=setTimeout(()=>_syncFlush(type),1500);
+}
+async function _syncFlush(type){
+  if(!(type in _syncPending))return;
+  const data=_syncPending[type]; delete _syncPending[type]; delete _syncTimers[type];
+  try{
+    await fetch(API.userData,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,data}),credentials:'include'});
+  }catch(e){console.warn('sync push failed:',type,e);}
+}
+// Flush all pending before page unload
+window.addEventListener('beforeunload',()=>{
+  for(const type of Object.keys(_syncPending)){
+    const data=_syncPending[type];
+    try{navigator.sendBeacon(API.userData,JSON.stringify({type,data}));}catch{}
+  }
+  _syncPending={};
+});
+// Pull all data from server → populate localStorage
+async function _syncPullAll(){
+  try{
+    const resp=await fetch(API.userData+'?type=all',{credentials:'include'});
+    if(!resp.ok)return false;
+    const json=await resp.json();
+    if(!json.success)return false;
+    const d=json.data;
+    const user=authCurrentUser();
+    if(!user)return false;
+    // Only overwrite localStorage if server has data
+    if(d.config){
+      const key=configKeyForUser(user.username);
+      localStorage.setItem(key,JSON.stringify(d.config));
+      config={...DEFAULT_CONFIG,...d.config};
+    }
+    if(d.images){
+      localStorage.setItem(userKey('imgbed_images'),JSON.stringify(d.images));
+      allImages=d.images;
+    }
+    if(d.albums){
+      localStorage.setItem(userKey('imgbed_albums'),JSON.stringify(d.albums));
+      userAlbums=d.albums;
+    }
+    if(d.favs){
+      localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(d.favs));
+    }
+    if(d.cats){
+      localStorage.setItem(userKey('imgbed_album_cats'),JSON.stringify(d.cats));
+    }
+    return true;
+  }catch(e){console.warn('sync pull failed:',e);return false;}
+}
+// Push all local data to server (first login migration)
+async function _syncPushAll(){
+  const user=authCurrentUser();
+  if(!user)return;
+  const batch={};
+  try{const s=localStorage.getItem(configKeyForUser(user.username));if(s)batch.config=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem(userKey('imgbed_images'));if(s)batch.images=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem(userKey('imgbed_albums'));if(s)batch.albums=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem(userKey('imgbed_favs'));if(s)batch.favs=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem(userKey('imgbed_album_cats'));if(s)batch.cats=JSON.parse(s);}catch{}
+  if(!Object.keys(batch).length)return;
+  try{await fetch(API.userData,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({batch}),credentials:'include'});}catch(e){console.warn('sync push all failed:',e);}
+}
 let config = { ...DEFAULT_CONFIG };
 let allImages = [];
 
@@ -2053,6 +2145,7 @@ function saveConfig(){
   const user=authCurrentUser();
   const key=user?configKeyForUser(user.username):'imgbed_config';
   localStorage.setItem(key, JSON.stringify(config));
+  _syncDebounce('config', config);
 }
 function getUserConfig(username){
   try{const s=localStorage.getItem(configKeyForUser(username));if(s)return{...DEFAULT_CONFIG,...JSON.parse(s)};}catch{}
@@ -2838,7 +2931,7 @@ function loadUserImages(){
   allImages=[...DEFAULT_IMAGES]; // new account gets defaults
   saveUserImages();
 }
-function saveUserImages(){localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));}
+function saveUserImages(){localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));_syncDebounce('images',allImages);}
 function loadGalleryDemo(){
   loadUserImages();
   document.getElementById('statFiles').textContent=allImages.length;
@@ -2854,7 +2947,7 @@ function renderHomeGallery(){
 // HOME ALBUMS
 let userAlbums = []; // User-created albums stored here
 function loadUserAlbums(){ try{ const s=localStorage.getItem(userKey('imgbed_albums')); if(s) userAlbums=JSON.parse(s); else userAlbums=[]; }catch(e){ userAlbums=[]; } }
-function saveUserAlbums(){ localStorage.setItem(userKey('imgbed_albums'), JSON.stringify(userAlbums)); }
+function saveUserAlbums(){ localStorage.setItem(userKey('imgbed_albums'), JSON.stringify(userAlbums)); _syncDebounce('albums',userAlbums); }
 
 function renderHomeAlbums(){
   loadUserAlbums();
@@ -3042,6 +3135,7 @@ function getAlbumCategories(){
 }
 function saveAlbumCategories(cats){
   localStorage.setItem(userKey('imgbed_album_cats'),JSON.stringify(cats));
+  _syncDebounce('cats',cats);
 }
 function addCustomCategory(name){
   const cats=getAlbumCategories();
@@ -3307,7 +3401,7 @@ function switchApTab(idx){
 
 // Favorites stored per image src
 function loadFavorites(){try{return JSON.parse(localStorage.getItem(userKey('imgbed_favs'))||'[]');}catch(e){return[];}}
-function saveFavorites(favs){localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(favs));}
+function saveFavorites(favs){localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(favs));_syncDebounce('favs',favs);}
 function toggleFav(src){
   let favs=loadFavorites();
   if(favs.includes(src)) favs=favs.filter(f=>f!==src);
