@@ -1305,7 +1305,9 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
   <div class="result-format-row">
     <label>嵌入代码</label>
     <select id="resultFormat" onchange="updateResultLinks()">
-      <option value="url">直链</option>
+      <option value="url">直链（原始文件名）</option>
+      <option value="url_ts">直链（时间戳）</option>
+      <option value="url_short">直链（短链）</option>
       <option value="markdown">Markdown</option>
       <option value="html">HTML 图片</option>
       <option value="bbcode">BBCode</option>
@@ -2081,17 +2083,20 @@ async function _syncPullAll(){
     const d=json.data;
     const user=authCurrentUser();
     if(!user)return false;
+    // Check if server actually has any data
+    const hasData=d.config||d.images||d.albums||d.favs||d.cats;
+    if(!hasData)return false;
     // Only overwrite localStorage if server has data
     if(d.config){
       const key=configKeyForUser(user.username);
       localStorage.setItem(key,JSON.stringify(d.config));
       config={...DEFAULT_CONFIG,...d.config};
     }
-    if(d.images){
+    if(d.images&&Array.isArray(d.images)&&d.images.length){
       localStorage.setItem(userKey('imgbed_images'),JSON.stringify(d.images));
       allImages=d.images;
     }
-    if(d.albums){
+    if(d.albums&&Array.isArray(d.albums)&&d.albums.length){
       localStorage.setItem(userKey('imgbed_albums'),JSON.stringify(d.albums));
       userAlbums=d.albums;
     }
@@ -2872,8 +2877,14 @@ function updateResultLinks(){
   const fmt=document.getElementById('resultFormat').value;
   const lines=_uploadResults.map(r=>{
     const url=r.fullUrl;
+    const origin=location.origin;
+    const al=r.aliases||{};
+    const tsUrl=al.timestamp?(al.timestamp.startsWith('/')?origin+al.timestamp:al.timestamp):url;
+    const shortUrl=al.short?(al.short.startsWith('/')?origin+al.short:al.short):url;
     switch(fmt){
       case 'url': return url;
+      case 'url_ts': return tsUrl;
+      case 'url_short': return shortUrl;
       case 'markdown': return `![${r.name}](${url})`;
       case 'html': return `<img src="${url}" alt="${r.name}">`;
       case 'bbcode': return `[img]${url}[/img]`;
@@ -3988,16 +3999,15 @@ function fcUpdate(){
   document.getElementById('fcBackThumb').src=img.src;
   document.getElementById('fcBackName').textContent=img.name||'image';
   document.getElementById('fcBackMeta').textContent=(img.date||'');
-  // Aliases info
+  // Aliases info — always show, fallback to current URL for old images
   const aliasBox=document.getElementById('fcBackAliases');
-  if(img.aliases){
-    aliasBox.style.display='';
-    const origin=location.origin;
-    const fmtA=a=>a?(a.startsWith('/')?origin+a:a):'-';
-    document.getElementById('fcAliasOriginal').textContent=fmtA(img.aliases.original);
-    document.getElementById('fcAliasTimestamp').textContent=fmtA(img.aliases.timestamp);
-    document.getElementById('fcAliasShort').textContent=fmtA(img.aliases.short);
-  }else{aliasBox.style.display='none';}
+  aliasBox.style.display='';
+  const origin=location.origin;
+  const fmtA=a=>a?(a.startsWith('/')?origin+a:a):'';
+  const al=img.aliases||{};
+  document.getElementById('fcAliasOriginal').textContent=fmtA(al.original)||fullUrl;
+  document.getElementById('fcAliasTimestamp').textContent=fmtA(al.timestamp)||'—';
+  document.getElementById('fcAliasShort').textContent=fmtA(al.short)||'—';
   // Dots
   const max=Math.min(fcList.length,9);
   document.getElementById('fcDots').innerHTML=Array.from({length:max},(_,i)=>`<span class="fc-dot${i===fcIdx?' active':''}"></span>`).join('');
