@@ -3702,86 +3702,90 @@ function asChangeCover(){
   const ui=getUserAlbumIdx();
   if(ui<0){showToast('系统相册无法修改封面');return;}
   const album=allAlbums[currentAlbumIdx];
+  const albumIdx=currentAlbumIdx;
   closeAlbumSettings();
-  // Show 3-button chooser
-  const hasImgs=album.images.length>0;
-  const btns=[
-    {label:'上传图片',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="22" height="22"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',action:'upload'},
-    ...(hasImgs?[{label:'相册选择',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',action:'pick'}]:[]),
-    {label:'输入链接',icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="22" height="22"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',action:'url'}
-  ];
-  const ov=document.getElementById('gdOverlay'),box=document.getElementById('gdBox');
-  document.getElementById('gdTitle').textContent='更换封面';
-  document.getElementById('gdDesc').textContent='选择封面来源';document.getElementById('gdDesc').style.display='';
-  document.getElementById('gdInput').style.display='none';
-  document.getElementById('gdTextarea').style.display='none';
-  document.getElementById('gdAlbumList').style.display='none';
-  document.getElementById('gdActions').innerHTML=btns.map(b=>
-    `<button class="gd-confirm" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;font-size:12px;min-width:0" onclick="_coverAction('${b.action}')">${b.icon}<span>${b.label}</span></button>`
-  ).join('');
-  gdCallback=null;
-  ov.classList.add('show');
-}
-function _coverAction(action){
-  gdClose();
-  const album=allAlbums[currentAlbumIdx];
-  const ui=getUserAlbumIdx();
-  if(action==='upload'){
+
+  function applyCover(src){
+    userAlbums[ui].coverSrc=src;
+    saveUserAlbums();refreshAlbumData();
+    if(currentAlbumIdx===albumIdx)renderAlbumDetail();
+    showToast('封面已更换');
+  }
+  function doUpload(){
     const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
     inp.onchange=async()=>{
       const file=inp.files[0];if(!file)return;
+      showToast('上传中...');
       try{
         const fd=new FormData();fd.append('file',file);
-        const resp=await fetch(API.upload,{method:'POST',body:fd});
-        if(!resp.ok)throw new Error('上传失败');
+        const resp=await fetch(API.upload,{method:'POST',body:fd,credentials:'include'});
+        if(!resp.ok)throw new Error('HTTP '+resp.status);
         const data=await resp.json();
-        if(data&&data[0]){
-          userAlbums[ui].coverSrc=location.origin+data[0].src;
-          saveUserAlbums();refreshAlbumData();renderAlbumDetail();
-          showToast('封面已更换');
+        if(Array.isArray(data)&&data[0]&&data[0].src){
+          applyCover(location.origin+data[0].src);
+        }else{
+          showToast('上传返回格式异常');console.warn('upload resp:',data);
         }
       }catch(e){showToast('上传失败: '+e.message);}
     };
     inp.click();
-  }else if(action==='pick'){
-    // Show image picker with thumbnails + names
-    const aList=document.getElementById('gdAlbumList');
-    document.getElementById('gdTitle').textContent='选择封面图片';
-    document.getElementById('gdDesc').textContent='点击选择一张图片';document.getElementById('gdDesc').style.display='';
-    document.getElementById('gdInput').style.display='none';
-    document.getElementById('gdTextarea').style.display='none';
-    aList.style.display='';
-    aList.innerHTML=album.images.map((img,i)=>
-      `<button class="gd-album-item${img.src===album.cover?' selected':''}" data-idx="${i}" onclick="gdToggleAlbum(this)" style="display:flex;align-items:center;gap:10px;padding:8px 12px">`+
-      `<img src="${img.src}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0">`+
-      `<div style="flex:1;overflow:hidden;text-align:left"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${img.name||'未命名'}</div>`+
-      `<div style="font-size:11px;color:#999;margin-top:2px">${img.date||''}</div></div>`+
-      `<div class="gda-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></button>`
-    ).join('');
-    document.getElementById('gdActions').innerHTML=`<button class="gd-cancel" id="gdCancelBtn" onclick="gdClose()">取消</button><button class="gd-confirm" id="gdConfirmBtn">确定</button>`;
-    document.getElementById('gdConfirmBtn').addEventListener('click',()=>{
-      const sel=[...aList.querySelectorAll('.gd-album-item.selected')];
-      if(sel.length){
-        const idx=parseInt(sel[0].dataset.idx);
-        userAlbums[ui].coverSrc=album.images[idx].src;
-        saveUserAlbums();refreshAlbumData();renderAlbumDetail();
-        showToast('封面已更换');
+  }
+  function doPick(){
+    const list=album.images;
+    if(!list.length){showToast('相册内没有图片');return;}
+    gdShow({title:'选择封面图片',desc:'点击选择一张图片',
+      albumPicker:true,
+      albums:list.map(img=>({
+        name:img.name||'未命名',
+        cover:img.src,
+        color:'#ccc',
+        count:-1, // hide count
+        selected:img.src===album.cover
+      })),
+      confirm:'确定',cancel:'取消',
+      onConfirm:(_v,_t,selIdxs)=>{
+        if(selIdxs.length>0){
+          applyCover(list[selIdxs[0]].src);
+        }
       }
-      gdClose();
     });
-    document.getElementById('gdOverlay').classList.add('show');
-  }else if(action==='url'){
+  }
+  function doUrl(){
     gdShow({title:'输入封面链接',input:true,inputPlaceholder:'粘贴图片URL...',
       confirm:'确定',cancel:'取消',
       onConfirm:(val)=>{
         val=val.trim();
         if(!val){showToast('链接不能为空');return false;}
-        userAlbums[ui].coverSrc=val;
-        saveUserAlbums();refreshAlbumData();renderAlbumDetail();
-        showToast('封面已更换');
+        applyCover(val);
       }
     });
   }
+
+  // Show 3-button chooser
+  const hasImgs=album.images.length>0;
+  const ov=document.getElementById('gdOverlay');
+  document.getElementById('gdTitle').textContent='更换封面';
+  document.getElementById('gdDesc').textContent='选择封面来源';document.getElementById('gdDesc').style.display='';
+  document.getElementById('gdInput').style.display='none';
+  document.getElementById('gdTextarea').style.display='none';
+  document.getElementById('gdAlbumList').style.display='none';
+  const actHTML=[
+    '<button class="gd-confirm" data-act="upload" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;font-size:12px;min-width:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="22" height="22"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>上传图片</span></button>',
+    hasImgs?'<button class="gd-confirm" data-act="pick" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;font-size:12px;min-width:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="22" height="22"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>相册选择</span></button>':'',
+    '<button class="gd-confirm" data-act="url" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;font-size:12px;min-width:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="22" height="22"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg><span>输入链接</span></button>'
+  ].join('');
+  document.getElementById('gdActions').innerHTML=actHTML;
+  document.getElementById('gdActions').querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const act=btn.dataset.act;
+      gdClose();
+      if(act==='upload')doUpload();
+      else if(act==='pick')doPick();
+      else if(act==='url')doUrl();
+    });
+  });
+  gdCallback=null;
+  ov.classList.add('show');
 }
 function asChangeCategory(){
   const ui=getUserAlbumIdx();
@@ -4142,7 +4146,7 @@ function gdShow(opts){
   const aList=document.getElementById('gdAlbumList');
   if(opts.albumPicker&&opts.albums){
     aList.style.display='';
-    aList.innerHTML=opts.albums.map((a,i)=>`<button class="gd-album-item${a.selected?' selected':''}" data-idx="${i}" onclick="gdToggleAlbum(this)">${a.cover?`<img src="${a.cover}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0">`:`<div class="gda-dot" style="background:${a.color||'#ccc'}"></div>`}<div class="gda-name">${a.name}</div><div class="gda-cnt">${a.count} 张</div><div class="gda-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></button>`).join('');
+    aList.innerHTML=opts.albums.map((a,i)=>`<button class="gd-album-item${a.selected?' selected':''}" data-idx="${i}" onclick="gdToggleAlbum(this)">${a.cover?`<img src="${a.cover}" style="width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0">`:`<div class="gda-dot" style="background:${a.color||'#ccc'}"></div>`}<div class="gda-name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</div>${a.count>=0?`<div class="gda-cnt">${a.count} 张</div>`:''}<div class="gda-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></button>`).join('');
   }else{aList.style.display='none';aList.innerHTML='';}
   const acts=document.getElementById('gdActions');
   const ccls=opts.confirmClass||'gd-confirm';
