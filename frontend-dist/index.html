@@ -1664,7 +1664,7 @@ function authSwitchTo(username){
   // Load new user's everything
   loadConfig(); applyConfig();
   loadUserImages(); loadUserAlbums();
-  document.getElementById('statFiles').textContent=allImages.length;
+  updateHomeStats();
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
   closeUserCard();
@@ -1723,14 +1723,14 @@ function authLogin(){
   document.getElementById('authOverlay').classList.remove('show');
   loadConfig(); applyConfig();
   loadUserImages(); loadUserAlbums();
-  document.getElementById('statFiles').textContent=allImages.length;
+  updateHomeStats();
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
   // Sync: try pull from server, if empty push local
   _syncPullAll().then(pulled=>{
     if(pulled){
       applyConfig();
-      document.getElementById('statFiles').textContent=allImages.length;
+      updateHomeStats();
       renderHomeGallery(); renderHomeAlbums(); onAuthReady();
     }else{
       _syncPushAll();
@@ -1748,7 +1748,7 @@ function authLogout(){
     localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify(next));
     loadConfig();applyConfig();
     loadUserImages();loadUserAlbums();
-    document.getElementById('statFiles').textContent=allImages.length;
+    updateHomeStats();
     renderHomeGallery();renderHomeAlbums();
     onAuthReady();
     showToast('已切换到 '+(getUserConfig(next.username).name||next.username));
@@ -1772,14 +1772,14 @@ function authCheckLogin(){
   // User exists - load their data (localStorage first for speed)
   loadConfig(); applyConfig(); initTheme();
   loadUserImages(); loadUserAlbums();
-  document.getElementById('statFiles').textContent=allImages.length;
+  updateHomeStats();
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
   // Background sync from server (overwrites local if server has data)
   _syncPullAll().then(pulled=>{
     if(pulled){
       applyConfig();
-      document.getElementById('statFiles').textContent=allImages.length;
+      updateHomeStats();
       renderHomeGallery(); renderHomeAlbums(); onAuthReady();
     }else{
       // Server empty → push local data up for first time
@@ -2688,7 +2688,7 @@ async function uploadPageStart(){
           if(data&&data[0]){
             const src=data[0].src,fullUrl=location.origin+src;
             results.push({name:file.name,src,fullUrl});
-            allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN')});
+            allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0});
           }
         }else throw new Error('HTTP '+resp.status);
       }catch(err){
@@ -2722,7 +2722,7 @@ async function uploadPageStart(){
   }
   if(results.length>0){
     saveUserImages();renderHomeGallery();renderHomeAlbums();
-    document.getElementById('statFiles').textContent=allImages.length;
+    updateHomeStats();
   }
   uploadPageUploading=false;
   btn.textContent='上传完成 ('+results.filter(Boolean).length+'/'+total+')';
@@ -2837,11 +2837,11 @@ async function handleFiles(files){
       bar.style.width='30%';const fd=new FormData();fd.append('file',file);bar.style.width='60%';
       const resp=await fetch(API.upload,{method:'POST',body:fd});bar.style.width='90%';
       if(resp.ok){const data=await resp.json();bar.style.width='100%';st.textContent='上传成功';st.style.color='#6a9a6a';
-        if(data&&data[0]){const src=data[0].src,fullUrl=location.origin+src;results.push({name:file.name,src,fullUrl});allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN')});}
+        if(data&&data[0]){const src=data[0].src,fullUrl=location.origin+src;results.push({name:file.name,src,fullUrl});allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0});}
       }else throw new Error('HTTP '+resp.status);
     }catch(err){bar.style.width='100%';bar.style.background='#e8a0a0';st.textContent='失败: '+err.message;st.style.color='#c06060';}
   }
-  if(results.length>0){saveUserImages();showResults(results);renderHomeGallery();renderHomeAlbums();document.getElementById('statFiles').textContent=allImages.length;}
+  if(results.length>0){saveUserImages();showResults(results);renderHomeGallery();renderHomeAlbums();updateHomeStats();}
   setTimeout(()=>{pw.classList.remove('active');pw.innerHTML='';},3000);
 }
 
@@ -2947,9 +2947,22 @@ async function reloadImagesFromServer(){
 function saveUserImages(){localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));_syncDebounce('images',allImages);}
 function loadGalleryDemo(){
   loadUserImages();
-  document.getElementById('statFiles').textContent=allImages.length;
-  document.getElementById('statStorage').textContent='12.5';
+  updateHomeStats();
   renderHomeGallery(); renderHomeAlbums();
+}
+function updateHomeStats(){
+  document.getElementById('statFiles').textContent=allImages.length;
+  const totalBytes=allImages.reduce((sum,img)=>sum+(img.size||0),0);
+  const mb=(totalBytes/(1024*1024)).toFixed(1);
+  document.getElementById('statStorage').textContent=mb;
+  // Days since first image
+  const first=allImages[allImages.length-1];
+  if(first&&first.date){
+    const now=new Date();
+    const created=new Date(first.createdAt||now);
+    const days=Math.max(1,Math.ceil((now-created)/(1000*60*60*24)));
+    document.getElementById('statDays').textContent=days;
+  }
 }
 function renderHomeGallery(){
   const grid=document.getElementById('galleryGrid'),count=config.galleryCount,imgs=allImages.slice(0,count);
@@ -3142,7 +3155,7 @@ function deleteSelected(){
   Array.from(selectedSet).map(Number).sort((a,b)=>b-a).forEach(i=>allImages.splice(i,1));
   saveUserImages();
   exitSelectMode();renderGalleryPage();renderHomeGallery();renderHomeAlbums();
-  document.getElementById('statFiles').textContent=allImages.length;
+  updateHomeStats();
   showToast(`已删除 ${count} 张图片`);
 }
 
@@ -3152,7 +3165,7 @@ let currentAlbumIdx=0;
 let apTabIdx=0;
 let apView='list';
 let apCatFilter='all';
-const defaultAlbumCategories=['风景','人物','美食','旅行','日常','其他'];
+const defaultAlbumCategories=[];
 function getAlbumCategories(){
   const key=userKey('imgbed_album_cats');
   try{const s=localStorage.getItem(key);if(s){const arr=JSON.parse(s);if(arr.length)return arr;}}catch{}
@@ -3203,11 +3216,7 @@ function refreshAlbumData(){
     const imgs=(a.imageSrcs||[]).map(s=>allImages.find(img=>img.src===s)).filter(Boolean);
     allAlbums.push({name:a.name,images:imgs,cover:imgs[0]?.src||a.coverSrc,color:a.color,category:a.category||'',visibility:a.visibility||'public'});
   });
-  const types={};
-  allImages.forEach(img=>{const ext=(img.name.split('.').pop()||'other').toLowerCase();if(!types[ext])types[ext]=[];types[ext].push(img);});
-  Object.entries(types).forEach(([ext,imgs])=>{
-    allAlbums.push({name:ext.toUpperCase(),images:imgs,cover:imgs[0]?.src});
-  });
+  // No auto type albums — only user albums + 未分类
 }
 
 function openAlbumPage(){
@@ -4021,7 +4030,7 @@ function fcDelete(img){
       saveUserAlbums();
       fcClose();
       renderHomeGallery(); renderHomeAlbums();
-      document.getElementById('statFiles').textContent=allImages.length;
+      updateHomeStats();
       if(document.getElementById('galleryPage').classList.contains('active')) renderGalleryPage();
       if(document.getElementById('albumPage').classList.contains('active')){refreshAlbumData();renderAlbumPage();}
       showToast('已删除「'+img.name+'」');
@@ -4275,7 +4284,7 @@ function apDeleteGroup(date){
       });
       saveUserAlbums(); saveUserImages();
       renderHomeGallery(); renderHomeAlbums();
-      document.getElementById('statFiles').textContent=allImages.length;
+      updateHomeStats();
       refreshAlbumData(); renderAlbumPage();
       showToast('已删除 '+idxs.length+' 张图片');
     }
