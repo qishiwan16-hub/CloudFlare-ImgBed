@@ -11,7 +11,7 @@
 import * as mw_api from '../../functions/api/_middleware.js';
 import * as mw_api_manage from '../../functions/api/manage/_middleware.js';
 import * as mw_dav from '../../functions/dav/_middleware.js';
-import * as mw_file from '../../functions/file/_middleware.js';
+import * as mw_OvO from '../../functions/OvO/_middleware.js';
 import * as mw_random from '../../functions/random/_middleware.js';
 import * as mw_upload from '../../functions/upload/_middleware.js';
 
@@ -65,7 +65,8 @@ import * as apiManageRenameCatchAll from '../../functions/api/manage/rename/[[pa
 import * as apiManageTagsCatchAll from '../../functions/api/manage/tags/[[path]].js';
 import * as apiManageWhiteCatchAll from '../../functions/api/manage/white/[[path]].js';
 import * as davCatchAll from '../../functions/dav/[[path]].js';
-import * as fileCatchAll from '../../functions/file/[[path]].js';
+import * as OvOCatchAll from '../../functions/OvO/[[path]].js';
+import * as fileRedirectCatchAll from '../../functions/file/[[path]].js';
 
 
 // ==================== 自动生成的路由表 ====================
@@ -120,7 +121,8 @@ const routes = [
     { path: '/api/manage/tags/', module: apiManageTagsCatchAll, middlewares: [mw_api, mw_api_manage], catchAll: true },
     { path: '/api/manage/white/', module: apiManageWhiteCatchAll, middlewares: [mw_api, mw_api_manage], catchAll: true },
     { path: '/dav/', module: davCatchAll, middlewares: [mw_dav], catchAll: true },
-    { path: '/file/', module: fileCatchAll, middlewares: [mw_file], catchAll: true },
+    { path: '/OvO/', module: OvOCatchAll, middlewares: [mw_OvO], catchAll: true },
+    { path: '/file/', module: fileRedirectCatchAll, middlewares: [], catchAll: true },
 ];
 
 
