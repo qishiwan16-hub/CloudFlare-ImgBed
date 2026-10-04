@@ -288,6 +288,7 @@ function buildUploadResponse(context, returnLink) {
     }
     // 返回三种链接
     const aliases = context.fileAliases;
+    console.log('[buildUploadResponse] aliases=', JSON.stringify(aliases), 'returnLink=', returnLink);
     if (aliases) {
         const base = returnLink.substring(0, returnLink.lastIndexOf('/') + 1);
         result.aliases = {

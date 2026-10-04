@@ -3008,9 +3008,9 @@ async function uploadPageStart(){
           if(item){item.classList.add('done');}
           uploadPageResults[i]='done';
           if(data&&data[0]){
-            const src=data[0].src,fullUrl=location.origin+src;
-            results.push({name:file.name,src,fullUrl});
-            allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0});
+            const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;
+            results.push({name:file.name,src,fullUrl,aliases:al});
+            allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0,aliases:al});
           }
         }else throw new Error('HTTP '+resp.status);
       }catch(err){
