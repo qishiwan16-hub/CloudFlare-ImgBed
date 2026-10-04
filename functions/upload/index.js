@@ -194,11 +194,20 @@ async function processFileUpload(context, formdata = null) {
     const fullId = await buildUniqueFileId(context, fileName, fileType);
 
     // 生成时间戳和短链别名
-    const aliases = await createFileAliases(context, fullId, fileName, fileExt);
-    metadata.AliasTimestamp = aliases.tsId;
-    metadata.AliasShort = aliases.shortId;
-    context.fileAliases = aliases;
     context.fullId = fullId;
+    try {
+        const aliases = await createFileAliases(context, fullId, fileName, fileExt);
+        if (aliases && aliases.tsId && aliases.shortId) {
+            metadata.AliasTimestamp = aliases.tsId;
+            metadata.AliasShort = aliases.shortId;
+            context.fileAliases = aliases;
+            console.log('[upload] aliases OK:', aliases.tsId, aliases.shortId);
+        } else {
+            console.log('[upload] aliases returned empty:', JSON.stringify(aliases));
+        }
+    } catch (aliasErr) {
+        console.log('[upload] createFileAliases error:', aliasErr.message);
+    }
 
     // 获得返回链接格式, default为返回/file/id, full为返回完整链接
     const returnFormat = url.searchParams.get('returnFormat') || 'default';
