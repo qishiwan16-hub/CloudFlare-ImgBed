@@ -1173,6 +1173,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
     <div class="as-actions">
       <button class="as-action-item" id="asVisToggle" onclick="asToggleVisibility()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>设为私密</button>
       <button class="as-action-item" onclick="asRename()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>重命名</button>
+      <button class="as-action-item" onclick="asChangeCategory()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>修改分类</button>
       <button class="as-action-item" onclick="asChangeCover()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>更换封面</button>
       <button class="as-action-item" onclick="asDeleteByType()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>按类型删除</button>
       <button class="as-action-item warn" onclick="asClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空相册</button>
@@ -1370,10 +1371,6 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
     </div>
     <div class="ad-field"><label>相册分类</label>
       <div class="ad-colors" id="adCats" style="gap:6px"></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <input type="text" id="adCustomCat" placeholder="自定义分类..." style="flex:1;padding:6px 10px;border:1.5px solid #e0dbd5;border-radius:8px;font-size:12px;background:#faf8f6;outline:none">
-        <button onclick="addCustomCatFromDialog()" style="padding:6px 14px;border-radius:8px;background:#2c2c2c;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">添加</button>
-      </div>
     </div>
     <div class="ad-field"><label>可见性</label>
       <div class="ad-visibility" id="adVisibility" style="display:flex;gap:8px">
@@ -3702,21 +3699,88 @@ function asRename(){
   });
 }
 function asChangeCover(){
+  const ui=getUserAlbumIdx();
+  if(ui<0){showToast('系统相册无法修改封面');return;}
   const album=allAlbums[currentAlbumIdx];
-  if(!album.images.length){showToast('相册没有图片');return;}
   closeAlbumSettings();
-  gdShow({title:'选择封面',desc:'点击选择一张图片作为封面',albumPicker:true,
-    albums:album.images.map(img=>({name:img.name,cover:img.src,color:'#ccc',count:0,selected:img.src===album.cover})),
-    confirm:'确定',cancel:'取消',
-    onConfirm:(_,__,selectedIdxs)=>{
-      if(selectedIdxs.length>0){
-        const ui=getUserAlbumIdx();
-        if(ui>=0&&ui<userAlbums.length){
-          userAlbums[ui].coverSrc=album.images[selectedIdxs[0]].src;
+  // Build picker: existing images (if any) + upload/URL options
+  const pickerAlbums=[];
+  if(album.images.length){
+    album.images.forEach(img=>pickerAlbums.push({name:img.name,cover:img.src,color:'#ccc',count:0,selected:img.src===album.cover}));
+  }
+  gdShow({title:'更换封面',desc:album.images.length?'选择相册内图片，或点击下方按钮上传/输入链接':'上传图片或输入图床链接作为封面',
+    albumPicker:album.images.length>0,
+    albums:pickerAlbums,
+    confirm:'上传图片',cancel:album.images.length?'确定选择':'输入链接',
+    onConfirm:()=>{
+      // Upload image as cover
+      const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+      inp.onchange=async()=>{
+        const file=inp.files[0];if(!file)return;
+        try{
+          const fd=new FormData();fd.append('file',file);
+          const resp=await fetch(API.upload,{method:'POST',body:fd});
+          if(!resp.ok)throw new Error('上传失败');
+          const data=await resp.json();
+          if(data&&data[0]){
+            userAlbums[ui].coverSrc=location.origin+data[0].src;
+            saveUserAlbums();refreshAlbumData();renderAlbumDetail();
+            showToast('封面已更换');
+          }
+        }catch(e){showToast('上传失败: '+e.message);}
+      };
+      inp.click();
+    },
+    onCancel:()=>{
+      if(album.images.length){
+        // "确定选择" — use selected image from picker
+        const sel=document.querySelectorAll('#gdAlbumList .gd-album-item.selected');
+        if(sel.length){
+          const idx=parseInt(sel[0].dataset.idx);
+          userAlbums[ui].coverSrc=album.images[idx].src;
           saveUserAlbums();refreshAlbumData();renderAlbumDetail();
           showToast('封面已更换');
         }
+      }else{
+        // "输入链接"
+        gdShow({title:'输入封面链接',input:true,inputPlaceholder:'粘贴图片URL...',
+          confirm:'确定',cancel:'取消',
+          onConfirm:(val)=>{
+            val=val.trim();
+            if(!val){showToast('链接不能为空');return false;}
+            userAlbums[ui].coverSrc=val;
+            saveUserAlbums();refreshAlbumData();renderAlbumDetail();
+            showToast('封面已更换');
+          }
+        });
       }
+    }
+  });
+}
+function asChangeCategory(){
+  const ui=getUserAlbumIdx();
+  if(ui<0){showToast('系统相册无法修改分类');return;}
+  const current=userAlbums[ui].category||'';
+  const cats=getAlbumCategories();
+  closeAlbumSettings();
+  if(!cats.length){
+    gdShow({title:'修改分类',desc:'还没有分类，请先在相册页面添加分类',confirm:'知道了',cancel:'',onConfirm:()=>{}});
+    return;
+  }
+  gdShow({title:'修改分类',desc:'选择相册分类（当前: '+(current||'无')+'）',albumPicker:true,
+    albums:cats.map(c=>({name:c,count:userAlbums.filter(a=>a.category===c).length,color:'#999',selected:c===current})),
+    confirm:'确定',cancel:'清除分类',
+    onConfirm:(_,__,selectedIdxs)=>{
+      userAlbums[ui].category=selectedIdxs.length?cats[selectedIdxs[0]]:'';
+      saveUserAlbums();refreshAlbumData();
+      if(document.getElementById('albumPage').classList.contains('active'))renderAlbumPage();
+      showToast('分类已更新');
+    },
+    onCancel:()=>{
+      userAlbums[ui].category='';
+      saveUserAlbums();refreshAlbumData();
+      if(document.getElementById('albumPage').classList.contains('active'))renderAlbumPage();
+      showToast('已清除分类');
     }
   });
 }
@@ -4140,19 +4204,7 @@ function refreshCatChips(){
   // Also refresh the filter
   albumCategories.length=0;albumCategories.push('all',...catList);
 }
-function addCustomCatFromDialog(){
-  const inp=document.getElementById('adCustomCat');
-  const name=inp.value.trim();
-  if(!name){showToast('请输入分类名称');return;}
-  addCustomCategory(name);
-  refreshCatChips();
-  inp.value='';
-  // Auto-select the new one
-  const btns=document.querySelectorAll('#adCats .ap-cat-chip');
-  btns.forEach(b=>b.classList.remove('active'));
-  const last=btns[btns.length-1];if(last)last.classList.add('active');
-  showToast('分类「'+name+'」已添加');
-}
+
 function selectAlbumVis(el){
   document.querySelectorAll('#adVisibility .ap-cat-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
@@ -4163,7 +4215,6 @@ function selectAlbumCat(el){
 }
 function openAlbumDialog(){
   document.getElementById('adNameInput').value='';
-  document.getElementById('adCustomCat').value='';
   document.querySelectorAll('.ad-color').forEach((c,i)=>{c.classList.toggle('selected',i===0);});
   document.querySelectorAll('#adCats .ap-cat-chip').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('#adVisibility .ap-cat-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
