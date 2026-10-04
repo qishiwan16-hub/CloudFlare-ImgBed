@@ -565,6 +565,7 @@ body.dark .theme-opt.active{background:#e8e4df;border-color:#e8e4df;color:#222}
 .gd-actions .gd-cancel{background:#f5f2ee;color:#6a6a6a}
 .gd-actions .gd-confirm{background:#2c2c2c;color:#fff}
 .gd-actions .gd-danger{background:#d4756a;color:#fff}
+.gd-actions .gd-btn{background:#f5f2ee;color:#2c2c2c}
 /* Album picker list */
 .gd-album-list{max-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:16px}
 .gd-album-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;transition:all .2s;border:none;background:none;width:100%;text-align:left}
@@ -744,6 +745,7 @@ body.dark .gd-box h4{color:#e8e4df}
 body.dark .gd-box p{color:#aaa}
 body.dark .gd-box input,body.dark .gd-box textarea{background:#2a2826;border-color:#3a3632;color:#e8e4df}
 body.dark .gd-actions .gd-cancel{background:#333;color:#aaa}
+body.dark .gd-actions .gd-btn{background:#333;color:#e8e4df}
 body.dark .gd-album-item .gda-name{color:#e8e4df}
 body.dark .gd-album-item:active{background:#2a2826}
 body.dark .gd-album-item .gda-check{border-color:#555}
@@ -3970,28 +3972,10 @@ function deleteSelectedAlbums(){
     refreshAlbumData();renderAlbumList();renderHomeAlbums();renderHomeGallery();updateHomeStats();
     showToast(keepImgs?'已删除 '+count+' 个相册，图片已保留':'已删除 '+count+' 个相册及所有图片');
   };
-  gdShow({title:'删除相册',desc:'确定要删除选中的 '+count+' 个相册吗？'+(totalImgs?'\n共有 '+totalImgs+' 张图片。':''),
-    confirm:'',cancel:'',
-    onConfirm:()=>{}
-  });
-  setTimeout(()=>{
-    const popup=document.querySelector('#gdOverlay.show .gd-popup');
-    if(!popup)return;
-    const actions=popup.querySelector('.gd-actions');
-    if(!actions)return;
-    actions.innerHTML='';
-    const btn1=document.createElement('button');btn1.className='gd-btn';btn1.textContent='保留图片';btn1.style.cssText='font-weight:600';
-    btn1.onclick=()=>{gdClose();doDelete(true);};
-    actions.appendChild(btn1);
-    if(totalImgs){
-      const btn2=document.createElement('button');btn2.className='gd-btn';btn2.textContent='连图片一起删除';btn2.style.cssText='color:#c06060;font-weight:600';
-      btn2.onclick=()=>{gdClose();doDelete(false);};
-      actions.appendChild(btn2);
-    }
-    const btn3=document.createElement('button');btn3.className='gd-btn';btn3.textContent='取消';
-    btn3.onclick=()=>gdClose();
-    actions.appendChild(btn3);
-  },50);
+  const btns=[{text:'保留图片',style:'font-weight:600',onClick:()=>doDelete(true)}];
+  if(totalImgs)btns.push({text:'连图片一起删除',style:'color:#c06060;font-weight:600',onClick:()=>doDelete(false)});
+  btns.push({text:'取消',onClick:()=>{}});
+  gdShow({title:'删除相册',desc:'确定要删除选中的 '+count+' 个相册吗？'+(totalImgs?'\n共有 '+totalImgs+' 张图片。':''),buttons:btns});
 }
 let albumLpTimer=null,albumLpMoved=false;
 function albumCardClick(ri){
@@ -4185,25 +4169,11 @@ function deleteSelectedApImgs(){
     renderAlbumDetail();renderHomeAlbums();renderHomeGallery();
     showToast(alsoDelete?'已删除 '+count+' 张图片':'已从相册移除 '+count+' 张图片');
   };
-  gdShow({title:'删除图片',desc:'已选中 '+count+' 张图片',confirm:'',cancel:'',onConfirm:()=>{}});
-  setTimeout(()=>{
-    const popup=document.querySelector('#gdOverlay.show .gd-popup');
-    if(!popup)return;
-    const actions=popup.querySelector('.gd-actions');
-    if(!actions)return;
-    actions.innerHTML='';
-    if(ui>=0){
-      const btn1=document.createElement('button');btn1.className='gd-btn';btn1.textContent='仅移出相册';btn1.style.cssText='font-weight:600';
-      btn1.onclick=()=>{gdClose();doRemove(false);};
-      actions.appendChild(btn1);
-    }
-    const btn2=document.createElement('button');btn2.className='gd-btn';btn2.textContent='彻底删除图片';btn2.style.cssText='color:#c06060;font-weight:600';
-    btn2.onclick=()=>{gdClose();doRemove(true);};
-    actions.appendChild(btn2);
-    const btn3=document.createElement('button');btn3.className='gd-btn';btn3.textContent='取消';
-    btn3.onclick=()=>gdClose();
-    actions.appendChild(btn3);
-  },50);
+  const btns=[];
+  if(ui>=0)btns.push({text:'仅移出相册',style:'font-weight:600',onClick:()=>doRemove(false)});
+  btns.push({text:'彻底删除图片',style:'color:#c06060;font-weight:600',onClick:()=>doRemove(true)});
+  btns.push({text:'取消',onClick:()=>{}});
+  gdShow({title:'删除图片',desc:'已选中 '+count+' 张图片',buttons:btns});
 }
 function bindApImgEvents(container){
   container.querySelectorAll('.ap-gimg[data-aidx]').forEach(item=>{
@@ -4567,27 +4537,10 @@ function asDelete(){
     renderHomeAlbums();renderHomeGallery();updateHomeStats();
     showToast(keepImgs?'相册已删除，图片已保留':'相册和图片已全部删除');
   };
-  gdShow({title:'删除相册',desc:'确定要删除「'+album.name+'」吗？'+(imgCount?'\n相册内有 '+imgCount+' 张图片。':''),
-    confirm:'',cancel:'',onConfirm:()=>{}
-  });
-  setTimeout(()=>{
-    const popup=document.querySelector('#gdOverlay.show .gd-popup');
-    if(!popup)return;
-    const actions=popup.querySelector('.gd-actions');
-    if(!actions)return;
-    actions.innerHTML='';
-    const btn1=document.createElement('button');btn1.className='gd-btn';btn1.textContent='保留图片';btn1.style.cssText='font-weight:600';
-    btn1.onclick=()=>{gdClose();doDelete(true);};
-    actions.appendChild(btn1);
-    if(imgCount){
-      const btn2=document.createElement('button');btn2.className='gd-btn';btn2.textContent='连图片一起删除';btn2.style.cssText='color:#c06060;font-weight:600';
-      btn2.onclick=()=>{gdClose();doDelete(false);};
-      actions.appendChild(btn2);
-    }
-    const btn3=document.createElement('button');btn3.className='gd-btn';btn3.textContent='取消';
-    btn3.onclick=()=>gdClose();
-    actions.appendChild(btn3);
-  },50);
+  const btns=[{text:'保留图片',style:'font-weight:600',onClick:()=>doDelete(true)}];
+  if(imgCount)btns.push({text:'连图片一起删除',style:'color:#c06060;font-weight:600',onClick:()=>doDelete(false)});
+  btns.push({text:'取消',onClick:()=>{}});
+  gdShow({title:'删除相册',desc:'确定要删除「'+album.name+'」吗？'+(imgCount?'\n相册内有 '+imgCount+' 张图片。':''),buttons:btns});
 }
 
 function fcSetCategory(src){
@@ -4887,23 +4840,32 @@ function gdShow(opts){
     aList.innerHTML=opts.albums.map((a,i)=>`<button class="gd-album-item${a.selected?' selected':''}" data-idx="${i}" onclick="gdToggleAlbum(this)">${a.cover?`<img src="${a.cover}" style="width:42px;height:42px;border-radius:8px;object-fit:cover;flex-shrink:0">`:`<div class="gda-dot" style="background:${a.color||'#ccc'}"></div>`}<div class="gda-name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</div>${a.count>=0?`<div class="gda-cnt">${a.count} 张</div>`:''}<div class="gda-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></button>`).join('');
   }else{aList.style.display='none';aList.innerHTML='';}
   const acts=document.getElementById('gdActions');
-  const ccls=opts.confirmClass||'gd-confirm';
-  const cancelCls=opts.cancelClass?'gd-cancel '+opts.cancelClass:'gd-cancel';
-  acts.innerHTML=`<button class="${cancelCls}" id="gdCancelBtn">${opts.cancel||'取消'}</button><button class="${ccls}" id="gdConfirmBtn">${opts.confirm||'确定'}</button>`;
-  gdCallback=opts.onConfirm||null;
-  const _onCancel=opts.onCancel||null;
-  document.getElementById('gdCancelBtn').addEventListener('click',()=>{
-    if(_onCancel){gdClose();_onCancel();return;}
-    gdClose();
-  });
-  document.getElementById('gdConfirmBtn').addEventListener('click',()=>{
-    if(gdCallback){
-      const selIdxs=[...aList.querySelectorAll('.gd-album-item.selected')].map(el=>parseInt(el.dataset.idx));
-      const r=gdCallback(inp.value, ta.value, selIdxs);
-      if(r===false) return;
-    }
-    gdClose();
-  });
+  if(opts.buttons&&opts.buttons.length){
+    if(opts.buttons.length>=3)acts.style.flexDirection='column';
+    else acts.style.flexDirection='';
+    acts.innerHTML=opts.buttons.map((b,i)=>'<button class="gd-btn" id="gdBtn_'+i+'"'+(b.style?' style="'+b.style+'"':'')+'>'+b.text+'</button>').join('');
+    opts.buttons.forEach((b,i)=>{document.getElementById('gdBtn_'+i).addEventListener('click',()=>{gdClose();if(b.onClick)b.onClick();});});
+    gdCallback=null;
+  }else{
+    acts.style.flexDirection='';
+    const ccls=opts.confirmClass||'gd-confirm';
+    const cancelCls=opts.cancelClass?'gd-cancel '+opts.cancelClass:'gd-cancel';
+    acts.innerHTML=`<button class="${cancelCls}" id="gdCancelBtn">${opts.cancel||'取消'}</button><button class="${ccls}" id="gdConfirmBtn">${opts.confirm||'确定'}</button>`;
+    gdCallback=opts.onConfirm||null;
+    const _onCancel=opts.onCancel||null;
+    document.getElementById('gdCancelBtn').addEventListener('click',()=>{
+      if(_onCancel){gdClose();_onCancel();return;}
+      gdClose();
+    });
+    document.getElementById('gdConfirmBtn').addEventListener('click',()=>{
+      if(gdCallback){
+        const selIdxs=[...aList.querySelectorAll('.gd-album-item.selected')].map(el=>parseInt(el.dataset.idx));
+        const r=gdCallback(inp.value, ta.value, selIdxs);
+        if(r===false) return;
+      }
+      gdClose();
+    });
+  }
   ov.classList.add('show');
   if(opts.input) setTimeout(()=>inp.focus(),100);
   else if(opts.textarea) setTimeout(()=>ta.focus(),100);
