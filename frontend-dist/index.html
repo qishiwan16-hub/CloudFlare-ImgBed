@@ -1460,7 +1460,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
     <div class="comp-tabs">
       <button class="comp-tab active" onclick="switchToolTab('compress')" id="tabCompress">压缩 / 转换</button>
       <button class="comp-tab" onclick="switchToolTab('migrate')" id="tabMigrate">图床迁移</button>
-      <button class="comp-tab" onclick="switchToolTab('zipdown')" id="tabZipdown">打包下载</button>
+      <button class="comp-tab" onclick="switchToolTab('zipup')" id="tabZipup">解压上传</button>
     </div>
     <!-- TAB: 压缩 -->
     <div class="comp-tab-content" id="tabContentCompress">
@@ -1515,7 +1515,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
         <div style="font-size:14px;font-weight:600;color:#6a6a6a;margin-top:8px">选择文件</div>
         <div style="font-size:11px;color:#aaa;margin-top:4px">支持 Markdown、HTML、CSS、JSON 等文本文件</div>
       </div>
-      <input type="file" id="migrateFileInput" accept=".md,.html,.htm,.css,.json,.txt,.xml,.svg,.js,.jsx,.tsx,.ts,.vue,.yaml,.yml,.toml" style="display:none">
+      <input type="file" id="migrateFileInput" accept=".md,.html,.htm,.css,.json,.txt,.xml,.svg,.js,.jsx,.tsx,.ts,.vue,.yaml,.yml,.toml,.zip" style="display:none">
       <div id="migrateContent" style="display:none">
         <div style="padding:12px 16px;background:#faf8f6;border-radius:12px;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -1556,27 +1556,32 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
         </div>
       </div>
     </div>
-  </div>
-    <!-- TAB: 打包下载 -->
-    <div class="comp-tab-content" id="tabContentZipdown" style="display:none">
-      <div style="padding:12px 0 8px;font-size:12px;color:#999">选择相册或图片，打包为 ZIP 下载</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="font-size:13px;font-weight:600;color:#2c2c2c">选择来源</div>
-        <select id="zipdownSource" onchange="zipdownSourceChange()" style="padding:10px 12px;border-radius:10px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:13px">
-          <option value="all">全部图片</option>
-        </select>
-        <div id="zipdownPreview" style="max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;padding:4px 0"></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span id="zipdownCount" style="font-size:12px;color:#999">0 张图片</span>
-          <span style="flex:1"></span>
-          <button class="comp-btn primary" id="zipdownBtn" onclick="zipdownStart()" style="min-width:120px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>打包下载</button>
+    <!-- TAB: 解压上传 -->
+    <div class="comp-tab-content" id="tabContentZipup" style="display:none">
+      <div class="comp-upload-area" id="zipupUploadArea" onclick="document.getElementById('zipupFileInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="36" height="36" style="opacity:.5"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M12 8v8m-3-4l3-3 3 3"/></svg>
+        <div style="font-size:14px;font-weight:600;color:#6a6a6a;margin-top:8px">选择 ZIP 压缩包</div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">提取图片后一键上传</div>
+      </div>
+      <input type="file" id="zipupFileInput" accept=".zip,application/zip,application/x-zip-compressed" style="display:none">
+      <div id="zipupContent" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span id="zipupFileName" style="font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+          <span id="zipupCount" style="font-size:12px;color:#999;white-space:nowrap"></span>
         </div>
-        <div id="zipdownProgress" style="display:none">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:4px"><span id="zipdownProgressText">打包中...</span><span id="zipdownProgressNum">0/0</span></div>
-          <div style="height:4px;background:#e8e4df;border-radius:2px;overflow:hidden"><div id="zipdownProgressBar" style="height:100%;background:#2c2c2c;border-radius:2px;width:0%;transition:width .3s"></div></div>
+        <div id="zipupList" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
+        <div id="zipupProgress" style="display:none;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:4px"><span id="zipupProgressText">上传中...</span><span id="zipupProgressNum">0/0</span></div>
+          <div style="height:4px;background:#e8e4df;border-radius:2px;overflow:hidden"><div id="zipupProgressBar" style="height:100%;background:#2c2c2c;border-radius:2px;width:0%;transition:width .3s"></div></div>
         </div>
+        <div class="comp-actions">
+          <button class="comp-btn primary" id="zipupStartBtn" onclick="zipupStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>一键上传</button>
+          <button class="comp-btn" onclick="zipupClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>
+        </div>
+        <div id="zipupResults" style="display:none;margin-top:12px"></div>
       </div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -2478,11 +2483,10 @@ function compDownloadAll(){
 // ===== TAB SWITCHING =====
 function switchToolTab(tab){
   document.querySelectorAll('.comp-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(tab==='compress'?'tabCompress':tab==='migrate'?'tabMigrate':'tabZipdown').classList.add('active');
+  document.getElementById(tab==='compress'?'tabCompress':tab==='migrate'?'tabMigrate':'tabZipup').classList.add('active');
   document.getElementById('tabContentCompress').style.display=tab==='compress'?'':'none';
   document.getElementById('tabContentMigrate').style.display=tab==='migrate'?'':'none';
-  document.getElementById('tabContentZipdown').style.display=tab==='zipdown'?'':'none';
-  if(tab==='zipdown')zipdownInit();
+  document.getElementById('tabContentZipup').style.display=tab==='zipup'?'':'none';
 }
 function openMigrator(){
   document.getElementById('compOverlay').classList.add('show');
@@ -2493,31 +2497,59 @@ function openMigrator(){
 // ===== FILE MIGRATOR =====
 let _migrateFile=null,_migrateOrigText='',_migrateText='',_migrateLinks=[];
 
-document.getElementById('migrateFileInput').addEventListener('change',(e)=>{
+let _migrateIsZip=false,_migrateZip=null,_migrateZipFiles=[];
+document.getElementById('migrateFileInput').addEventListener('change',async(e)=>{
   const f=e.target.files[0];if(!f)return;
   _migrateFile=f;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    _migrateOrigText=reader.result;
-    _migrateText=reader.result;
-    _migrateLinks=[];
-    const seen=new Set();
+  const isZip=f.name.toLowerCase().endsWith('.zip')||f.type==='application/zip'||f.type==='application/x-zip-compressed';
+  _migrateIsZip=isZip;
+  _migrateZipFiles=[];
+  _migrateLinks=[];
+  const seen=new Set();
+  const re=/(https?:\/\/[^\s"'<>)\]]+?\.(?:png|jpg|jpeg|gif|webp|avif|bmp|svg|ico|tiff?)(?:\?[^\s"'<>)\]]*)?)/gi;
+  if(isZip){
+    try{
+      showToast('正在解析ZIP...');
+      _migrateZip=await JSZip.loadAsync(f);
+      const textExts=['md','html','htm','css','json','txt','xml','svg','js','jsx','tsx','ts','vue','yaml','yml','toml'];
+      const promises=[];
+      _migrateZip.forEach((path,entry)=>{
+        if(entry.dir)return;
+        const ext=path.split('.').pop().toLowerCase();
+        if(textExts.includes(ext))promises.push(entry.async('string').then(text=>({path,text})));
+      });
+      _migrateZipFiles=await Promise.all(promises);
+      if(!_migrateZipFiles.length){showToast('ZIP内没有可迁移的文本文件');e.target.value='';return;}
+      _migrateOrigText='';_migrateText='';
+      _migrateZipFiles.forEach(zf=>{
+        let m;
+        re.lastIndex=0;
+        while((m=re.exec(zf.text))!==null){
+          const url=m[1];
+          if(!seen.has(url)){seen.add(url);_migrateLinks.push({url,status:'pending',newUrl:'',aliases:null});}
+        }
+      });
+      document.getElementById('migrateFileName').textContent=f.name+' ('+_migrateZipFiles.length+' 个文件)';
+    }catch(err){showToast('ZIP解析失败: '+err.message);e.target.value='';return;}
+  }else{
+    _migrateZip=null;
+    const text=await f.text();
+    _migrateOrigText=text;
+    _migrateText=text;
     let m;
-    const re=/(https?:\/\/[^\s"'<>)\]]+?\.(?:png|jpg|jpeg|gif|webp|avif|bmp|svg|ico|tiff?)(?:\?[^\s"'<>)\]]*)?)/gi;
     while((m=re.exec(_migrateOrigText))!==null){
       const url=m[1];
       if(!seen.has(url)){seen.add(url);_migrateLinks.push({url,status:'pending',newUrl:'',aliases:null});}
     }
     document.getElementById('migrateFileName').textContent=f.name;
-    document.getElementById('migrateLinkCount').textContent=_migrateLinks.length;
-    document.getElementById('migrateReplacedCount').textContent='0';
-    document.getElementById('migrateUploadArea').style.display='none';
-    document.getElementById('migrateContent').style.display='';
-    document.getElementById('migrateBeforePanel').style.display='';
-    document.getElementById('migrateAfterPanel').style.display='none';
-    document.getElementById('migrateProgress').style.display='none';
-  };
-  reader.readAsText(f);
+  }
+  document.getElementById('migrateLinkCount').textContent=_migrateLinks.length;
+  document.getElementById('migrateReplacedCount').textContent='0';
+  document.getElementById('migrateUploadArea').style.display='none';
+  document.getElementById('migrateContent').style.display='';
+  document.getElementById('migrateBeforePanel').style.display='';
+  document.getElementById('migrateAfterPanel').style.display='none';
+  document.getElementById('migrateProgress').style.display='none';
   e.target.value='';
 });
 
@@ -2590,12 +2622,20 @@ async function migrateStart(){
   }
   // Build replaced text from original
   const fmt=document.getElementById('migrateLinkFmt').value;
-  _migrateText=_migrateOrigText;
-  _migrateLinks.forEach(link=>{
-    if(link.status==='done'){
-      _migrateText=_migrateText.split(link.url).join(migrateGetFmtUrl(link,fmt));
-    }
-  });
+  if(_migrateIsZip){
+    _migrateZipFiles.forEach(zf=>{
+      let t=zf.text;
+      _migrateLinks.forEach(link=>{if(link.status==='done'){t=t.split(link.url).join(migrateGetFmtUrl(link,fmt));}});
+      zf.replaced=t;
+    });
+  }else{
+    _migrateText=_migrateOrigText;
+    _migrateLinks.forEach(link=>{
+      if(link.status==='done'){
+        _migrateText=_migrateText.split(link.url).join(migrateGetFmtUrl(link,fmt));
+      }
+    });
+  }
   btn.disabled=false;
   document.getElementById('migrateProgress').style.display='none';
   document.getElementById('migrateBeforePanel').style.display='none';
@@ -2642,93 +2682,138 @@ function migrateCopyLink(idx){
   showToast('已复制');
 }
 
-function migrateDownload(){
-  // Rebuild text with current format
+async function migrateDownload(){
   const fmt=document.getElementById('migrateLinkFmt').value;
-  let text=_migrateOrigText;
-  _migrateLinks.forEach(link=>{
-    if(link.status==='done'){
-      text=text.split(link.url).join(migrateGetFmtUrl(link,fmt));
-    }
-  });
-  const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=(_migrateFile?.name||'migrated.txt');
-  a.click();
-  URL.revokeObjectURL(a.href);
+  if(_migrateIsZip&&_migrateZip){
+    // Rebuild ZIP with replaced text files
+    const newZip=new JSZip();
+    const replacedPaths=new Set(_migrateZipFiles.map(zf=>zf.path));
+    // Add replaced text files
+    _migrateZipFiles.forEach(zf=>{
+      let t=zf.text;
+      _migrateLinks.forEach(link=>{if(link.status==='done'){t=t.split(link.url).join(migrateGetFmtUrl(link,fmt));}});
+      newZip.file(zf.path,t);
+    });
+    // Keep non-text files as-is
+    const promises=[];
+    _migrateZip.forEach((path,entry)=>{
+      if(!entry.dir&&!replacedPaths.has(path)){
+        promises.push(entry.async('blob').then(blob=>newZip.file(path,blob)));
+      }
+    });
+    await Promise.all(promises);
+    const content=await newZip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(content);
+    a.download=_migrateFile?.name||'migrated.zip';a.click();
+    URL.revokeObjectURL(a.href);
+  }else{
+    let text=_migrateOrigText;
+    _migrateLinks.forEach(link=>{
+      if(link.status==='done'){text=text.split(link.url).join(migrateGetFmtUrl(link,fmt));}
+    });
+    const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=(_migrateFile?.name||'migrated.txt');a.click();
+    URL.revokeObjectURL(a.href);
+  }
 }
 
 function migrateClear(){
   _migrateFile=null;_migrateOrigText='';_migrateText='';_migrateLinks=[];
+  _migrateIsZip=false;_migrateZip=null;_migrateZipFiles=[];
   document.getElementById('migrateUploadArea').style.display='';
   document.getElementById('migrateContent').style.display='none';
   closeMigrateLinks();
 }
-// ===== ZIP DOWNLOAD =====
-function zipdownInit(){
-  const sel=document.getElementById('zipdownSource');
-  sel.innerHTML='<option value="all">全部图片 ('+allImages.length+')</option>';
-  userAlbums.forEach((a,i)=>{
-    const cnt=(a.imageSrcs||[]).length;
-    sel.innerHTML+='<option value="album_'+i+'">'+a.name+' ('+cnt+')</option>';
-  });
-  zipdownSourceChange();
-}
-function zipdownGetImages(){
-  const val=document.getElementById('zipdownSource').value;
-  if(val==='all')return allImages.map(img=>({src:img.src,name:img.name||'image'}));
-  const m=val.match(/^album_(\d+)$/);
-  if(m){const a=userAlbums[parseInt(m[1])];if(!a)return [];return(a.imageSrcs||[]).map((url,i)=>{const img=allImages.find(im=>im.src===url);return{src:url,name:img?.name||('image-'+(i+1))};});}
-  return [];
-}
-function zipdownSourceChange(){
-  const imgs=zipdownGetImages();
-  document.getElementById('zipdownCount').textContent=imgs.length+' 张图片';
-  const prev=document.getElementById('zipdownPreview');
-  prev.innerHTML=imgs.slice(0,20).map(img=>'<img src="'+img.src+'" style="width:42px;height:42px;object-fit:cover;border-radius:6px">').join('')+(imgs.length>20?'<span style="font-size:11px;color:#999;align-self:center">+'+( imgs.length-20)+'</span>':'');
-  document.getElementById('zipdownBtn').disabled=imgs.length===0;
-}
-async function zipdownStart(){
-  const imgs=zipdownGetImages();
-  if(!imgs.length){showToast('没有图片');return;}
-  const btn=document.getElementById('zipdownBtn');
-  btn.disabled=true;btn.textContent='打包中...';
-  const prog=document.getElementById('zipdownProgress');
-  prog.style.display='';
+// ===== ZIP EXTRACT & UPLOAD =====
+let _zipupFiles=[],_zipupName='';
+document.getElementById('zipupFileInput').addEventListener('change',async(e)=>{
+  const f=e.target.files[0];if(!f)return;
   try{
-    const zip=new JSZip();
-    const usedNames={};
-    for(let i=0;i<imgs.length;i++){
-      document.getElementById('zipdownProgressText').textContent='下载 '+(i+1)+'/'+imgs.length;
-      document.getElementById('zipdownProgressNum').textContent=(i+1)+'/'+imgs.length;
-      document.getElementById('zipdownProgressBar').style.width=((i+1)/imgs.length*80)+'%';
-      try{
-        const resp=await fetch(imgs[i].src);
-        if(!resp.ok)continue;
-        const blob=await resp.blob();
-        let fname=cleanFileName(imgs[i].name)||('image-'+(i+1));
-        const ext=fname.includes('.')?'':'.'+( blob.type.split('/')[1]||'png');
-        if(ext)fname+=ext;
-        // Deduplicate
-        if(usedNames[fname]){let c=1;const base=fname.replace(/\.[^.]+$/,''),e=fname.slice(base.length);while(usedNames[base+'-'+c+e])c++;fname=base+'-'+c+e;}
-        usedNames[fname]=true;
-        zip.file(fname,blob);
-      }catch(e){}
+    showToast('正在解压...');
+    const zip=await JSZip.loadAsync(f);
+    const imgExts=['png','jpg','jpeg','gif','webp','avif','bmp','svg','ico','tiff'];
+    const entries=[];
+    zip.forEach((path,entry)=>{if(entry.dir)return;const ext=path.split('.').pop().toLowerCase();if(imgExts.includes(ext))entries.push({path,entry});});
+    entries.sort((a,b)=>a.path.localeCompare(b.path));
+    _zipupFiles=[];
+    for(const{path,entry}of entries){
+      const blob=await entry.async('blob');
+      const name=path.split('/').pop();
+      const ext=name.split('.').pop().toLowerCase();
+      const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',avif:'image/avif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tiff:'image/tiff'};
+      _zipupFiles.push({file:new File([blob],name,{type:mimeMap[ext]||'image/png'}),url:URL.createObjectURL(blob),status:'pending',result:null});
     }
-    document.getElementById('zipdownProgressText').textContent='生成ZIP...';
-    document.getElementById('zipdownProgressBar').style.width='90%';
-    const content=await zip.generateAsync({type:'blob'});
-    document.getElementById('zipdownProgressBar').style.width='100%';
-    const val=document.getElementById('zipdownSource').value;
-    let zipName='images';
-    if(val.startsWith('album_')){const a=userAlbums[parseInt(val.slice(6))];if(a)zipName=a.name;}
-    const a=document.createElement('a');a.href=URL.createObjectURL(content);a.download=zipName+'.zip';a.click();
-    URL.revokeObjectURL(a.href);
-    showToast('打包完成');
-  }catch(e){showToast('打包失败: '+e.message);}
-  btn.disabled=false;btn.textContent='打包下载';
+    _zipupName=cleanFileName(f.name).replace(/\.[^.]+$/,'');
+    document.getElementById('zipupFileName').textContent=f.name;
+    document.getElementById('zipupCount').textContent=_zipupFiles.length+' 张图片';
+    zipupRenderList();
+    document.getElementById('zipupUploadArea').style.display='none';
+    document.getElementById('zipupContent').style.display='';
+    document.getElementById('zipupResults').style.display='none';
+    document.getElementById('zipupProgress').style.display='none';
+  }catch(err){showToast('解压失败: '+err.message);}
+  e.target.value='';
+});
+function zipupRenderList(){
+  const el=document.getElementById('zipupList');
+  el.innerHTML=_zipupFiles.map((zf,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0ede9">'+
+    '<img src="'+zf.url+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0">'+
+    '<span style="flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+zf.file.name+'</span>'+
+    '<span style="font-size:11px;color:#999;flex-shrink:0">'+compFormatSize(zf.file.size)+'</span>'+
+    '<span id="zipupSt_'+i+'" style="font-size:11px;flex-shrink:0;width:16px;text-align:center">'+(zf.status==='done'?'✓':zf.status==='error'?'✗':'')+'</span>'+
+    '</div>').join('');
+}
+async function zipupStart(){
+  if(!_zipupFiles.length){showToast('没有图片');return;}
+  const btn=document.getElementById('zipupStartBtn');
+  btn.disabled=true;btn.textContent='上传中...';
+  const prog=document.getElementById('zipupProgress');
+  prog.style.display='';
+  const results=[];
+  const total=_zipupFiles.length;
+  for(let i=0;i<total;i++){
+    const zf=_zipupFiles[i];
+    document.getElementById('zipupProgressText').textContent='上传 '+(i+1)+'/'+total;
+    document.getElementById('zipupProgressNum').textContent=(i+1)+'/'+total;
+    document.getElementById('zipupProgressBar').style.width=((i+1)/total*100)+'%';
+    try{
+      const fd=new FormData();fd.append('file',zf.file);
+      const resp=await fetch(API.upload,{method:'POST',body:fd,credentials:'include'});
+      if(!resp.ok)throw new Error('HTTP '+resp.status);
+      const data=await resp.json();
+      if(Array.isArray(data)&&data[0]&&data[0].src){
+        const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;
+        zf.status='done';zf.result={name:cleanFileName(zf.file.name),src,fullUrl,aliases:al};
+        results.push(zf.result);
+        allImages.unshift({src:fullUrl,name:cleanFileName(zf.file.name),date:new Date().toLocaleDateString('zh-CN'),size:zf.file.size||0,aliases:al});
+      }else throw new Error('Bad response');
+    }catch(e){zf.status='error';}
+    const st=document.getElementById('zipupSt_'+i);
+    if(st)st.textContent=zf.status==='done'?'✓':'✗';
+  }
+  // Auto-create album
+  if(results.length>0){
+    saveUserImages();
+    const albumName=_zipupName||'ZIP上传';
+    let album=userAlbums.find(a=>a.name===albumName);
+    if(!album){album={name:albumName,imageSrcs:[],color:'',category:'',visibility:'public',coverSrc:''};userAlbums.push(album);}
+    if(!album.imageSrcs)album.imageSrcs=[];
+    results.forEach(r=>{if(!album.imageSrcs.includes(r.fullUrl))album.imageSrcs.push(r.fullUrl);});
+    saveUserAlbums();
+    refreshAlbumData();updateHomeStats();renderHomeGallery();renderHomeAlbums();
+  }
+  btn.disabled=false;btn.textContent='一键上传';
   prog.style.display='none';
+  // Show results like normal upload
+  if(results.length>0)showResults(results);
+  showToast('上传完成: '+results.length+'/'+total);
+}
+function zipupClear(){
+  _zipupFiles.forEach(zf=>{if(zf.url)URL.revokeObjectURL(zf.url);});
+  _zipupFiles=[];_zipupName='';
+  document.getElementById('zipupUploadArea').style.display='';
+  document.getElementById('zipupContent').style.display='none';
 }
 // ===== IMAGE CROPPER =====
 let cropImg=null,cropX=0,cropY=0,cropScale=1,cropRot=0,cropAspect=1,cropShape='circle',cropCallback=null;
