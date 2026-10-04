@@ -2745,7 +2745,7 @@ document.getElementById('zipupFileInput').addEventListener('change',async(e)=>{
       _zipupFiles.push({file:new File([blob],name,{type:mimeMap[ext]||'image/png'}),url:URL.createObjectURL(blob),status:'pending',result:null});
     }
     _zipupName=cleanFileName(f.name).replace(/\.[^.]+$/,'');
-    document.getElementById('zipupFileName').textContent=f.name;
+    document.getElementById('zipupFileName').textContent=cleanFileName(f.name);
     document.getElementById('zipupCount').textContent=_zipupFiles.length+' 张图片';
     zipupRenderList();
     document.getElementById('zipupUploadArea').style.display='none';
@@ -3316,7 +3316,7 @@ function galleryItemHtml(img){
   return `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f5f3f0;position:relative">${fileTypeIcon(img.name)}<div style="position:absolute;bottom:4px;left:4px;right:4px;font-size:9px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">${img.name.split('.').pop().toUpperCase()}</div></div>`;
 }
 
-function cleanFileName(n){return (n||'').replace(/^\d{13,}_/,'');}
+function cleanFileName(n){return (n||'').replace(/^\d{13,}_+/,'');}
 function isImageFile(name,type){
   if(type&&type.startsWith('image/'))return true;
   const ext=(name||'').split('.').pop().toLowerCase();

@@ -115,7 +115,7 @@ export function sanitizeFileName(fileName) {
     fileName = fileName.split('/').pop();
 
     // Remove Android browser auto-prepended 13-digit timestamp prefix
-    fileName = fileName.replace(/^\d{13,}_/, '');
+    fileName = fileName.replace(/^\d{13,}_+/, '');
 
     const unsafeCharsRe = /[\\\/:\*\?"'<>\| \(\)\[\]\{\}#%\^`~;@&=\+\$,]/g;
     return fileName.replace(unsafeCharsRe, '_');
