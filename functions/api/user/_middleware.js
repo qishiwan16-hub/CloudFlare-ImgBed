@@ -45,6 +45,11 @@ async function authentication(context) {
   context.data = context.data || {};
   context.data.authType = result.authType;
 
+  // Extract username from session cookie for per-user data isolation
+  const { validateSession } = await import('../../utils/auth/sessionManager.js');
+  const sessionResult = await validateSession(env, context.request, result.authType);
+  context.data.username = sessionResult.valid ? (sessionResult.session?.username || result.authType) : result.authType;
+
   return context.next();
 }
 

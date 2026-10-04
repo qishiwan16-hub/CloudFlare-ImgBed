@@ -3,8 +3,8 @@
  * GET  /api/user/data?type=config|albums|images|favs|cats|all
  * POST /api/user/data  body: { type, data }
  * 
- * 数据存储在 KV/D1 中，key 格式: user_data@{authType}@{type}
- * 管理员和普通用户各自独立存储空间
+ * 数据存储在 KV/D1 中，key 格式: user_data@{username}@{type}
+ * 每个用户独立存储空间
  */
 import { getDatabase } from '../../utils/databaseAdapter.js';
 
@@ -12,15 +12,15 @@ const VALID_TYPES = ['config', 'albums', 'images', 'favs', 'cats', 'storage_limi
 const DATA_PREFIX = 'user_data@';
 const MAX_DATA_SIZE = 5 * 1024 * 1024; // 5MB per type
 
-function dataKey(authType, type) {
-  return `${DATA_PREFIX}${authType}@${type}`;
+function dataKey(username, type) {
+  return `${DATA_PREFIX}${username}@${type}`;
 }
 
 export async function onRequestGet(context) {
   const { request, env, data: ctxData } = context;
   const url = new URL(request.url);
   const type = url.searchParams.get('type') || 'all';
-  const authType = ctxData?.authType || 'user';
+  const username = ctxData?.username || ctxData?.authType || 'anonymous';
 
   const db = getDatabase(env);
 
@@ -29,7 +29,7 @@ export async function onRequestGet(context) {
       // Return all user data types at once
       const result = {};
       for (const t of VALID_TYPES) {
-        const val = await db.get(dataKey(authType, t));
+        const val = await db.get(dataKey(username, t));
         try { result[t] = val ? JSON.parse(val) : null; } catch { result[t] = null; }
       }
       return new Response(JSON.stringify({ success: true, data: result }), {
@@ -41,7 +41,7 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({ success: false, error: 'Invalid type: ' + type }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const val = await db.get(dataKey(authType, type));
+    const val = await db.get(dataKey(username, type));
     let parsed = null;
     try { parsed = val ? JSON.parse(val) : null; } catch { parsed = null; }
 
@@ -57,7 +57,7 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env, data: ctxData } = context;
-  const authType = ctxData?.authType || 'user';
+  const username = ctxData?.username || ctxData?.authType || 'anonymous';
 
   let body;
   try { body = await request.json(); } catch {
@@ -74,7 +74,7 @@ export async function onRequestPost(context) {
       if (!VALID_TYPES.includes(t)) { results[t] = 'skipped'; continue; }
       const json = JSON.stringify(d);
       if (json.length > MAX_DATA_SIZE) { results[t] = 'too_large'; continue; }
-      await db.put(dataKey(authType, t), json);
+      await db.put(dataKey(username, t), json);
       results[t] = 'ok';
     }
     return new Response(JSON.stringify({ success: true, results }), {
@@ -93,7 +93,7 @@ export async function onRequestPost(context) {
     }
 
     const db = getDatabase(env);
-    await db.put(dataKey(authType, type), json);
+    await db.put(dataKey(username, type), json);
 
     return new Response(JSON.stringify({ success: true, type }), {
       headers: { 'Content-Type': 'application/json' }
