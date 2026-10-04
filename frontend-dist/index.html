@@ -3055,55 +3055,73 @@ async function uploadPageStart(){
 function fileTypeIcon(name,type){
   const ext=(name||'').split('.').pop().toLowerCase();
   const t=type||'';
-  // Card style: stroke border + light semi-transparent fill + dark colored ext label
-  function card(stroke,fill,label){
-    return `<svg viewBox="0 0 48 56" width="36" height="42" xmlns="http://www.w3.org/2000/svg">
-<path d="M6 1h23l13 13v36a6 6 0 01-6 6H6a6 6 0 01-6-6V7a6 6 0 016-6z" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
-<path d="M29 1v9a4 4 0 004 4h9" fill="none" stroke="${stroke}" stroke-width="1.5"/>
-<text x="24" y="40" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif" font-size="11" font-weight="700" fill="${stroke}" letter-spacing=".5">${label}</text>
-</svg>`;
+  // Modern rounded square icon style
+  function icon(bg,fg,label,iconSvg){
+    return `<div style="width:48px;height:48px;border-radius:12px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;box-shadow:0 2px 8px ${bg}44">`
+      +(iconSvg||'')
+      +`<span style="font-size:${label.length>3?'10':'12'}px;font-weight:800;color:${fg};letter-spacing:.5px;line-height:1;margin-top:${iconSvg?'2':'0'}px">${label}</span>`
+      +`</div>`;
+  }
+  function iconWithLines(bg,fg,label){
+    const lines=`<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:2px"><div style="width:18px;height:2px;background:${fg};border-radius:1px;opacity:.7"></div><div style="width:14px;height:2px;background:${fg};border-radius:1px;opacity:.5"></div></div>`;
+    return `<div style="width:48px;height:48px;border-radius:12px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 8px ${bg}44">${lines}<span style="font-size:${label.length>3?'9':'11'}px;font-weight:800;color:${fg};letter-spacing:.5px;line-height:1">${label}</span></div>`;
+  }
+  function iconWithSymbol(bg,fg,label,symbol){
+    return `<div style="width:48px;height:48px;border-radius:12px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 8px ${bg}44"><span style="font-size:16px;line-height:1">${symbol}</span><span style="font-size:${label.length>3?'8':'10'}px;font-weight:800;color:${fg};letter-spacing:.3px;line-height:1;margin-top:2px">${label}</span></div>`;
   }
   // Video
   if(t.startsWith('video/')||'mp4,mov,avi,mkv,wmv,flv,webm,m4v,3gp'.split(',').includes(ext))
-    return card('#5c6bc0','rgba(92,107,192,.1)',ext.toUpperCase()||'VID');
+    return iconWithSymbol('linear-gradient(135deg,#ff6b6b,#ee5a24)','#fff',ext.toUpperCase()||'VID','▶');
   // Audio
   if(t.startsWith('audio/')||'mp3,wav,flac,aac,ogg,wma,m4a,opus,aiff,ape'.split(',').includes(ext))
-    return card('#8e44ad','rgba(142,68,173,.1)',ext.toUpperCase()||'AUD');
+    return iconWithSymbol('linear-gradient(135deg,#a55eea,#8854d0)','#fff',ext.toUpperCase()||'AUD','♪');
   // PDF
   if(t==='application/pdf'||ext==='pdf')
-    return card('#c0392b','rgba(192,57,43,.08)','PDF');
+    return iconWithLines('linear-gradient(135deg,#ff6348,#ee4035)','#fff','PDF');
   // Word
   if('doc,docx'.split(',').includes(ext)||t.includes('word'))
-    return card('#2b79c0','rgba(43,121,192,.08)',ext.toUpperCase());
+    return iconWithLines('linear-gradient(135deg,#56a3f7,#2d8cf0)','#fff','W');
   // Text / Markdown
   if('txt,md,rtf,csv,log,odt'.split(',').includes(ext)||t.includes('text/'))
-    return card('#607d8b','rgba(96,125,139,.08)',ext.toUpperCase());
+    return iconWithLines('linear-gradient(135deg,#a4b0be,#747d8c)','#fff',ext.toUpperCase());
   // Spreadsheet
   if('xls,xlsx,ods,numbers'.split(',').includes(ext)||t.includes('spreadsheet')||t.includes('excel'))
-    return card('#1e8449','rgba(30,132,73,.08)',ext.toUpperCase());
+    return iconWithLines('linear-gradient(135deg,#2ed573,#20bf6b)','#fff','X');
   // Presentation
   if('ppt,pptx,odp,key'.split(',').includes(ext)||t.includes('presentation')||t.includes('powerpoint'))
-    return card('#c0392b','rgba(192,57,43,.08)',ext.toUpperCase());
+    return iconWithLines('linear-gradient(135deg,#ff9f43,#ee8a2a)','#fff','P');
   // Font
   if('ttf,otf,woff,woff2,eot'.split(',').includes(ext)||t.includes('font'))
-    return card('#c2185b','rgba(194,24,91,.08)',ext.toUpperCase());
-  // Archive
+    return iconWithSymbol('linear-gradient(135deg,#fd79a8,#e84393)','#fff',ext.toUpperCase(),'Aa');
+  // Archive / ZIP
   if('zip,rar,7z,tar,gz,bz2,xz,tgz,dmg,iso'.split(',').includes(ext)||t.includes('zip')||t.includes('compressed')||t.includes('archive'))
-    return card('#d4a017','rgba(212,160,23,.1)',ext.toUpperCase());
+    return iconWithSymbol('linear-gradient(135deg,#2bcbba,#0fb9b1)','#fff',ext.toUpperCase(),'📦');
   // Code
   if('js,ts,py,java,c,cpp,h,css,html,json,xml,yaml,yml,sh,rb,go,rs,php,swift,kt'.split(',').includes(ext))
-    return card('#00897b','rgba(0,137,123,.08)',ext.toUpperCase());
+    return iconWithSymbol('linear-gradient(135deg,#45aaf2,#2d98da)','#fff',ext.toUpperCase(),'</>'); 
   // APK / Executable
   if('apk,exe,msi,deb,rpm,appimage,ipa'.split(',').includes(ext))
-    return card('#43a047','rgba(67,160,71,.08)',ext.toUpperCase());
-  // Design files
-  if('psd,ai,sketch,fig,xd'.split(',').includes(ext))
-    return card('#1976d2','rgba(25,118,210,.08)',ext.toUpperCase());
+    return iconWithSymbol('linear-gradient(135deg,#26de81,#20bf6b)','#fff',ext.toUpperCase(),'⚙');
+  // Design files - PSD
+  if(ext==='psd')
+    return iconWithLines('linear-gradient(135deg,#4a3728,#2c2018)','#fff','Ps');
+  // Design files - AI
+  if(ext==='ai')
+    return iconWithLines('linear-gradient(135deg,#ff9f43,#ee7b2d)','#fff','Ai');
+  // Design files - other
+  if('sketch,fig,xd'.split(',').includes(ext))
+    return iconWithLines('linear-gradient(135deg,#a55eea,#7c4dff)','#fff',ext.toUpperCase());
   // Database
   if('sql,db,sqlite,mdb'.split(',').includes(ext))
-    return card('#6d4c41','rgba(109,76,65,.08)',ext.toUpperCase());
+    return iconWithSymbol('linear-gradient(135deg,#8d6e63,#6d4c41)','#fff',ext.toUpperCase(),'◎');
+  // Image (non-previewable)
+  if(t.startsWith('image/'))
+    return iconWithSymbol('linear-gradient(135deg,#74b9ff,#0984e3)','#fff',ext.toUpperCase(),'🖼');
+  // GIF
+  if(ext==='gif')
+    return iconWithSymbol('linear-gradient(135deg,#55efc4,#00b894)','#fff','GIF','◎');
   // Default
-  return card('#90857c','rgba(144,133,124,.08)',ext?ext.toUpperCase():'FILE');
+  return iconWithLines('linear-gradient(135deg,#dfe6e9,#b2bec3)','#636e72',ext?ext.toUpperCase():'FILE');
 }
 
 function galleryItemHtml(img){
