@@ -432,7 +432,7 @@ export async function isBlockedUploadIp(env, uploadIp) {
     }
 }
 
-// 构建唯一文件ID
+// 构建唯一文件ID (v2: original filename + letter suffix)
 // 生成字母后缀: 0->a, 1->b, ..., 25->z, 26->aa, 27->ab, ...
 function letterSuffix(n) {
     let s = '';
