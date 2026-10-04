@@ -2713,10 +2713,9 @@ async function uploadPageStart(){
   if(albumSel!==''&&results.length>0){
     const aIdx=parseInt(albumSel);
     if(userAlbums[aIdx]){
-      if(!userAlbums[aIdx].imageIdxs)userAlbums[aIdx].imageIdxs=[];
+      if(!userAlbums[aIdx].imageSrcs)userAlbums[aIdx].imageSrcs=[];
       results.forEach(r=>{
-        const imgIdx=allImages.findIndex(img=>img.src===r.fullUrl);
-        if(imgIdx>=0)userAlbums[aIdx].imageIdxs.unshift(imgIdx);
+        if(!userAlbums[aIdx].imageSrcs.includes(r.fullUrl))userAlbums[aIdx].imageSrcs.unshift(r.fullUrl);
       });
       saveUserAlbums();
     }
@@ -2928,8 +2927,22 @@ const DEFAULT_IMAGES=[
 function loadUserImages(){
   const key=userKey('imgbed_images');
   try{const s=localStorage.getItem(key);if(s){allImages=JSON.parse(s);return;}}catch{}
-  allImages=[...DEFAULT_IMAGES]; // new account gets defaults
+  allImages=[...DEFAULT_IMAGES];
   saveUserImages();
+}
+// Server-first image reload — called after login sync
+async function reloadImagesFromServer(){
+  try{
+    const resp=await fetch(API.userData+'?type=images',{credentials:'include'});
+    if(!resp.ok)return false;
+    const json=await resp.json();
+    if(json.success&&json.data&&Array.isArray(json.data)){
+      allImages=json.data;
+      localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));
+      return true;
+    }
+  }catch(e){console.warn('reloadImagesFromServer:',e);}
+  return false;
 }
 function saveUserImages(){localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));_syncDebounce('images',allImages);}
 function loadGalleryDemo(){
@@ -2946,17 +2959,29 @@ function renderHomeGallery(){
 
 // HOME ALBUMS
 let userAlbums = []; // User-created albums stored here
-function loadUserAlbums(){ try{ const s=localStorage.getItem(userKey('imgbed_albums')); if(s) userAlbums=JSON.parse(s); else userAlbums=[]; }catch(e){ userAlbums=[]; } }
+function loadUserAlbums(){
+  try{ const s=localStorage.getItem(userKey('imgbed_albums')); if(s) userAlbums=JSON.parse(s); else userAlbums=[]; }catch(e){ userAlbums=[]; }
+  // Migrate old imageIdxs → imageSrcs
+  let migrated=false;
+  userAlbums.forEach(a=>{
+    if(a.imageIdxs && !a.imageSrcs){
+      a.imageSrcs=(a.imageIdxs||[]).map(i=>allImages[i]?.src).filter(Boolean);
+      delete a.imageIdxs;
+      migrated=true;
+    }
+  });
+  if(migrated) saveUserAlbums();
+}
 function saveUserAlbums(){ localStorage.setItem(userKey('imgbed_albums'), JSON.stringify(userAlbums)); _syncDebounce('albums',userAlbums); }
 
 function renderHomeAlbums(){
   loadUserAlbums();
   const scroll=document.getElementById('albumsScroll');
   // 未分类: images not in any user album
-  const _catIdxs=new Set(); userAlbums.forEach(a=>(a.imageIdxs||[]).forEach(i=>_catIdxs.add(i)));
-  const _uncatImgs=allImages.filter((_,i)=>!_catIdxs.has(i));
+  const _catSrcs=new Set(); userAlbums.forEach(a=>(a.imageSrcs||[]).forEach(s=>_catSrcs.add(s)));
+  const _uncatImgs=allImages.filter(img=>!_catSrcs.has(img.src));
   const builtIn=[{name:'未分类',count:_uncatImgs.length,cover:_uncatImgs[0]?.src}];
-  const allHomeAlbums=[...builtIn,...userAlbums.map(a=>({name:a.name,count:(a.imageIdxs||[]).length,cover:a.imageIdxs&&a.imageIdxs.length?allImages[a.imageIdxs[0]]?.src:null,color:a.color,visibility:a.visibility||'public'}))]; 
+  const allHomeAlbums=[...builtIn,...userAlbums.map(a=>{const srcs=a.imageSrcs||[];return{name:a.name,count:srcs.length,cover:srcs[0]||a.coverSrc||null,color:a.color,visibility:a.visibility||'public'};})]; 
   let html=allHomeAlbums.map((a,i)=>`<div class="album-card" onclick="homeAlbumClick(${i})" style="${a.color?'border-bottom:3px solid '+a.color:''}"><div class="ac-thumb" style="position:relative">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}${a.visibility==='private'?'<div class="album-vis-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>私密</div>':''}</div><div class="ac-info"><div class="ac-name">${a.name}</div><div class="ac-cnt">${a.count} 张照片</div></div></div>`).join('');
   scroll.innerHTML=html;
 }
@@ -3169,13 +3194,13 @@ function initAlbumPage(){
 function refreshAlbumData(){
   loadUserAlbums();
   // 未分类: images not in any user album
-  const _catSet=new Set(); userAlbums.forEach(a=>(a.imageIdxs||[]).forEach(i=>_catSet.add(i)));
-  const uncatImgs=allImages.filter((_,i)=>!_catSet.has(i));
+  const _catSrcs=new Set(); userAlbums.forEach(a=>(a.imageSrcs||[]).forEach(s=>_catSrcs.add(s)));
+  const uncatImgs=allImages.filter(img=>!_catSrcs.has(img.src));
   allAlbums=[
     {name:'未分类',images:uncatImgs,cover:uncatImgs[0]?.src},
   ];
   userAlbums.forEach(a=>{
-    const imgs=(a.imageIdxs||[]).map(i=>allImages[i]).filter(Boolean);
+    const imgs=(a.imageSrcs||[]).map(s=>allImages.find(img=>img.src===s)).filter(Boolean);
     allAlbums.push({name:a.name,images:imgs,cover:imgs[0]?.src||a.coverSrc,color:a.color,category:a.category||'',visibility:a.visibility||'public'});
   });
   const types={};
@@ -3224,7 +3249,7 @@ function renderAlbumList(){
   document.getElementById('apAlbumCount').textContent=allAlbums.length;
   document.getElementById('apRecent').textContent=allImages.filter(i=>i.date==='\u4eca\u5929').length;
   const cf=document.getElementById('apCatFilter');
-  cf.innerHTML=albumCategories.map(c=>`<button class="ap-cat-chip${c===apCatFilter?' active':''}" onclick="apFilterCat('${c}')">${c==='all'?'\u5168\u90e8':c}</button>`).join('');
+  cf.innerHTML=albumCategories.map(c=>`<button class="ap-cat-chip${c===apCatFilter?' active':''}" onclick="apFilterCat('${c}')" ontouchstart="catChipTouchStart(event,'${c}')" ontouchend="catChipTouchEnd(event)" ontouchmove="catChipTouchCancel()">${c==='all'?'\u5168\u90e8':c}</button>`).join('')+'<button class="ap-cat-chip" onclick="catChipAdd()" style="border:1.5px dashed #ccc;color:#aaa">+ 添加</button>';
   const filtered=apCatFilter==='all'?allAlbums:allAlbums.filter(a=>(a.category||'')===apCatFilter);
   const grid=document.getElementById('apAlbumGrid3');
   if(!filtered.length){grid.innerHTML='<div class="ap-content-empty" style="grid-column:1/-1">\u6ca1\u6709\u5339\u914d\u7684\u76f8\u518c</div>';return;}
@@ -3234,6 +3259,86 @@ function renderAlbumList(){
   }).join('');
 }
 function apFilterCat(cat){apCatFilter=cat;renderAlbumList();}
+
+// Category chip long-press edit
+let _catChipTimer=null,_catChipMoved=false;
+function catChipTouchStart(e,cat){
+  _catChipMoved=false;
+  if(cat==='all')return;
+  _catChipTimer=setTimeout(()=>{
+    _catChipTimer='fired';
+    e.preventDefault();
+    catChipEdit(cat);
+  },500);
+}
+function catChipTouchEnd(e){
+  if(_catChipTimer==='fired'){e.preventDefault();}
+  else if(_catChipTimer)clearTimeout(_catChipTimer);
+  _catChipTimer=null;
+}
+function catChipTouchCancel(){if(_catChipTimer&&_catChipTimer!=='fired')clearTimeout(_catChipTimer);_catChipTimer=null;_catChipMoved=true;}
+function catChipEdit(cat){
+  gdShow({
+    title:'编辑分类「'+cat+'」',
+    desc:'选择操作：',
+    confirm:'重命名',cancel:'删除',cancelClass:'gd-danger',
+    onConfirm:()=>{
+      gdShow({
+        title:'重命名分类',desc:'',input:true,inputValue:cat,
+        confirm:'保存',cancel:'取消',
+        onConfirm:(val)=>{
+          val=val.trim();
+          if(!val){showToast('名称不能为空');return false;}
+          if(val===cat)return;
+          const cats=getAlbumCategories();
+          const idx=cats.indexOf(cat);
+          if(idx>=0)cats[idx]=val;
+          saveAlbumCategories(cats);
+          // Update albums using this category
+          userAlbums.forEach(a=>{if(a.category===cat)a.category=val;});
+          saveUserAlbums();
+          albumCategories.length=0;albumCategories.push('all',...cats);
+          if(apCatFilter===cat)apCatFilter=val;
+          refreshAlbumData();renderAlbumList();
+          showToast('已重命名为「'+val+'」');
+        }
+      });
+    },
+    onCancel:()=>{
+      gdShow({
+        title:'删除分类',desc:'确定删除分类「'+cat+'」？相册分类会清空，但相册本身不会被删除。',
+        confirm:'确认删除',confirmClass:'gd-danger',cancel:'取消',
+        onConfirm:()=>{
+          let cats=getAlbumCategories().filter(c=>c!==cat);
+          saveAlbumCategories(cats);
+          userAlbums.forEach(a=>{if(a.category===cat)a.category='';});
+          saveUserAlbums();
+          albumCategories.length=0;albumCategories.push('all',...cats);
+          if(apCatFilter===cat)apCatFilter='all';
+          refreshAlbumData();renderAlbumList();
+          showToast('分类「'+cat+'」已删除');
+        }
+      });
+    }
+  });
+}
+function catChipAdd(){
+  gdShow({
+    title:'添加分类',desc:'',input:true,inputPlaceholder:'输入分类名称',
+    confirm:'添加',cancel:'取消',
+    onConfirm:(val)=>{
+      val=val.trim();
+      if(!val){showToast('名称不能为空');return false;}
+      const cats=getAlbumCategories();
+      if(cats.includes(val)){showToast('分类已存在');return false;}
+      cats.push(val);
+      saveAlbumCategories(cats);
+      albumCategories.length=0;albumCategories.push('all',...cats);
+      renderAlbumList();
+      showToast('已添加分类「'+val+'」');
+    }
+  });
+}
 let albumSelectMode=false, albumSelectedSet=new Set();
 
 function enterAlbumSelectMode(){
@@ -3619,14 +3724,14 @@ function asDeleteByType(){
     onConfirm:(_,__,selectedIdxs)=>{
       if(!selectedIdxs.length){showToast('未选择任何类型');return;}
       const delExts=selectedIdxs.map(i=>typeList[i].ext);
-      const before=userAlbums[ui].imageIdxs?.length||0;
-      userAlbums[ui].imageIdxs=(userAlbums[ui].imageIdxs||[]).filter(idx=>{
-        const img=allImages[idx];
+      const before=userAlbums[ui].imageSrcs?.length||0;
+      userAlbums[ui].imageSrcs=(userAlbums[ui].imageSrcs||[]).filter(src=>{
+        const img=allImages.find(im=>im.src===src);
         if(!img)return false;
         const ext=(img.name.split('.').pop()||'other').toLowerCase();
         return !delExts.includes(ext);
       });
-      const removed=before-(userAlbums[ui].imageIdxs?.length||0);
+      const removed=before-(userAlbums[ui].imageSrcs?.length||0);
       saveUserAlbums();refreshAlbumData();renderAlbumDetail();
       showToast('已删除 '+removed+' 个文件');
     }
@@ -3638,7 +3743,7 @@ function asClear(){
   gdShow({title:'清空相册',desc:'确定要清空「'+allAlbums[currentAlbumIdx].name+'」中的所有图片吗？这不会删除原始文件。',
     confirm:'清空',cancel:'取消',
     onConfirm:()=>{
-      userAlbums[ui].imageIdxs=[];
+      userAlbums[ui].imageSrcs=[];
       saveUserAlbums();refreshAlbumData();renderAlbumDetail();closeAlbumSettings();
       showToast('相册已清空');
     }
@@ -3873,22 +3978,22 @@ function fcEditInfo(img){
 function fcMoveToAlbum(img){
   loadUserAlbums();
   if(!userAlbums.length){showToast('请先创建相册');return;}
-  const imgIdx=allImages.indexOf(img);
+  const imgSrc=img.src;
   gdShow({
     title:'移动到相册',
     albumPicker:true,
-    albums:userAlbums.map(a=>({name:a.name,color:a.color,count:(a.imageIdxs||[]).length,selected:(a.imageIdxs||[]).includes(imgIdx)})),
+    albums:userAlbums.map(a=>({name:a.name,color:a.color,count:(a.imageSrcs||[]).length,selected:(a.imageSrcs||[]).includes(imgSrc)})),
     confirm:'确定', cancel:'取消',
     onConfirm:(_,__,selectedIdxs)=>{
       selectedIdxs.forEach(si=>{
         const album=userAlbums[si];
-        if(!album.imageIdxs) album.imageIdxs=[];
-        if(!album.imageIdxs.includes(imgIdx)) album.imageIdxs.push(imgIdx);
+        if(!album.imageSrcs) album.imageSrcs=[];
+        if(!album.imageSrcs.includes(imgSrc)) album.imageSrcs.push(imgSrc);
       });
       // Remove from unselected
       userAlbums.forEach((a,i)=>{
-        if(!selectedIdxs.includes(i)&&a.imageIdxs){
-          a.imageIdxs=a.imageIdxs.filter(x=>x!==imgIdx);
+        if(!selectedIdxs.includes(i)&&a.imageSrcs){
+          a.imageSrcs=a.imageSrcs.filter(x=>x!==imgSrc);
         }
       });
       saveUserAlbums(); renderHomeAlbums();
@@ -3908,10 +4013,10 @@ function fcDelete(img){
       const idx=allImages.indexOf(img);
       if(idx>=0) allImages.splice(idx,1);
       saveUserImages();
-      // Clean up album refs
+      // Clean up album refs by URL
       loadUserAlbums();
       userAlbums.forEach(a=>{
-        if(a.imageIdxs) a.imageIdxs=a.imageIdxs.filter(x=>x!==idx).map(x=>x>idx?x-1:x);
+        if(a.imageSrcs) a.imageSrcs=a.imageSrcs.filter(x=>x!==img.src);
       });
       saveUserAlbums();
       fcClose();
@@ -3942,8 +4047,14 @@ function gdShow(opts){
   }else{aList.style.display='none';aList.innerHTML='';}
   const acts=document.getElementById('gdActions');
   const ccls=opts.confirmClass||'gd-confirm';
-  acts.innerHTML=`<button class="gd-cancel" onclick="gdClose()">${opts.cancel||'取消'}</button><button class="${ccls}" id="gdConfirmBtn">${opts.confirm||'确定'}</button>`;
+  const cancelCls=opts.cancelClass?'gd-cancel '+opts.cancelClass:'gd-cancel';
+  acts.innerHTML=`<button class="${cancelCls}" id="gdCancelBtn">${opts.cancel||'取消'}</button><button class="${ccls}" id="gdConfirmBtn">${opts.confirm||'确定'}</button>`;
   gdCallback=opts.onConfirm||null;
+  const _onCancel=opts.onCancel||null;
+  document.getElementById('gdCancelBtn').addEventListener('click',()=>{
+    if(_onCancel){gdClose();_onCancel();return;}
+    gdClose();
+  });
   document.getElementById('gdConfirmBtn').addEventListener('click',()=>{
     if(gdCallback){
       const selIdxs=[...aList.querySelectorAll('.gd-album-item.selected')].map(el=>parseInt(el.dataset.idx));
@@ -4070,7 +4181,7 @@ function confirmCreateAlbum(){
   const category=catEl?catEl.dataset.cat:'';
   const visEl=document.querySelector('#adVisibility .ap-cat-chip.active');
   const visibility=visEl?visEl.dataset.vis:'public';
-  userAlbums.push({name,color,category,visibility,imageIdxs:[],createdAt:Date.now()});
+  userAlbums.push({name,color,category,visibility,imageSrcs:[],createdAt:Date.now()});
   saveUserAlbums();
   closeAlbumDialog();
   renderHomeAlbums();
@@ -4130,15 +4241,13 @@ function apEditGroup(date){
     desc:'共 '+imgs.length+' 张图片，选择操作：',
     confirm:'全部移动到相册', cancel:'取消',
     albumPicker:true,
-    albums:userAlbums.map(a=>({name:a.name,color:a.color,count:(a.imageIdxs||[]).length,selected:false})),
+    albums:userAlbums.map(a=>({name:a.name,color:a.color,count:(a.imageSrcs||[]).length,selected:false})),
     onConfirm:(_,__,selectedIdxs)=>{
       if(!selectedIdxs.length){showToast('请选择目标相册');return false;}
       imgs.forEach(img=>{
-        const imgIdx=allImages.indexOf(img);
-        if(imgIdx<0) return;
         selectedIdxs.forEach(si=>{
-          if(!userAlbums[si].imageIdxs) userAlbums[si].imageIdxs=[];
-          if(!userAlbums[si].imageIdxs.includes(imgIdx)) userAlbums[si].imageIdxs.push(imgIdx);
+          if(!userAlbums[si].imageSrcs) userAlbums[si].imageSrcs=[];
+          if(!userAlbums[si].imageSrcs.includes(img.src)) userAlbums[si].imageSrcs.push(img.src);
         });
       });
       saveUserAlbums(); renderHomeAlbums();
@@ -4157,12 +4266,12 @@ function apDeleteGroup(date){
     onConfirm:()=>{
       // Get indexes sorted descending to avoid shifting
       const idxs=imgs.map(img=>allImages.indexOf(img)).filter(i=>i>=0).sort((a,b)=>b-a);
-      idxs.forEach(idx=>{
-        allImages.splice(idx,1);
-        // Update album refs
-        userAlbums.forEach(a=>{
-          if(a.imageIdxs) a.imageIdxs=a.imageIdxs.filter(x=>x!==idx).map(x=>x>idx?x-1:x);
-        });
+      // Collect URLs before splicing
+      const delSrcs=idxs.map(idx=>allImages[idx]?.src).filter(Boolean);
+      idxs.forEach(idx=>allImages.splice(idx,1));
+      // Clean album refs by URL
+      userAlbums.forEach(a=>{
+        if(a.imageSrcs) a.imageSrcs=a.imageSrcs.filter(x=>!delSrcs.includes(x));
       });
       saveUserAlbums(); saveUserImages();
       renderHomeGallery(); renderHomeAlbums();
