@@ -433,6 +433,16 @@ export async function isBlockedUploadIp(env, uploadIp) {
 }
 
 // 构建唯一文件ID
+// 生成字母后缀: 0->a, 1->b, ..., 25->z, 26->aa, 27->ab, ...
+function letterSuffix(n) {
+    let s = '';
+    do {
+        s = String.fromCharCode(97 + (n % 26)) + s;
+        n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+    return s;
+}
+
 export async function buildUniqueFileId(context, fileName, fileType = 'application/octet-stream') {
     const { env, url } = context;
     const db = getDatabase(env);
@@ -441,7 +451,6 @@ export async function buildUniqueFileId(context, fileName, fileType = 'applicati
 
     const nameType = url.searchParams.get('uploadNameType') || 'default';
     const uploadFolder = url.searchParams.get('uploadFolder') || '';
-    // 对上传路径进行安全处理
     const normalizedFolder = sanitizeUploadFolder(uploadFolder);
 
     // 处理文件名，移除特殊字符
@@ -450,13 +459,9 @@ export async function buildUniqueFileId(context, fileName, fileType = 'applicati
     const unique_index = Date.now() + Math.floor(Math.random() * 10000);
     let baseId = '';
 
-    // 根据命名方式构建基础ID
     if (nameType === 'index') {
         baseId = normalizedFolder ? `${normalizedFolder}/${unique_index}.${fileExt}` : `${unique_index}.${fileExt}`;
-    } else if (nameType === 'origin') {
-        baseId = normalizedFolder ? `${normalizedFolder}/${fileName}` : fileName;
     } else if (nameType === 'short') {
-        // 对于短链接，直接在循环中生成不重复的ID
         while (true) {
             const shortId = generateShortId(8);
             const testFullId = normalizedFolder ? `${normalizedFolder}/${shortId}.${fileExt}` : `${shortId}.${fileExt}`;
@@ -465,7 +470,8 @@ export async function buildUniqueFileId(context, fileName, fileType = 'applicati
             }
         }
     } else {
-        baseId = normalizedFolder ? `${normalizedFolder}/${unique_index}_${fileName}` : `${unique_index}_${fileName}`;
+        // default & origin: use original filename
+        baseId = normalizedFolder ? `${normalizedFolder}/${fileName}` : fileName;
     }
 
     // 检查基础ID是否已存在
@@ -473,43 +479,19 @@ export async function buildUniqueFileId(context, fileName, fileType = 'applicati
         return baseId;
     }
 
-    // 如果已存在，在文件名后面加上递增编号
-    let counter = 1;
-    while (true) {
-        let duplicateId;
+    // 已存在 → 用字母后缀: name-a.ext, name-b.ext, ..., name-z.ext, name-aa.ext ...
+    const dotIdx = baseId.lastIndexOf('.');
+    const stem = dotIdx > 0 ? baseId.substring(0, dotIdx) : baseId;
+    const ext = dotIdx > 0 ? baseId.substring(dotIdx) : '';
 
-        if (nameType === 'index') {
-            const baseName = unique_index;
-            duplicateId = normalizedFolder ?
-                `${normalizedFolder}/${baseName}(${counter}).${fileExt}` :
-                `${baseName}(${counter}).${fileExt}`;
-        } else if (nameType === 'origin') {
-            const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
-            const ext = fileName.substring(fileName.lastIndexOf('.'));
-            duplicateId = normalizedFolder ?
-                `${normalizedFolder}/${nameWithoutExt}(${counter})${ext}` :
-                `${nameWithoutExt}(${counter})${ext}`;
-        } else {
-            const baseName = `${unique_index}_${fileName}`;
-            const nameWithoutExt = baseName.substring(0, baseName.lastIndexOf('.'));
-            const ext = baseName.substring(baseName.lastIndexOf('.'));
-            duplicateId = normalizedFolder ?
-                `${normalizedFolder}/${nameWithoutExt}(${counter})${ext}` :
-                `${nameWithoutExt}(${counter})${ext}`;
-        }
-
-        // 检查新ID是否已存在
+    for (let i = 0; i < 1000; i++) {
+        const duplicateId = `${stem}-${letterSuffix(i)}${ext}`;
         if (await db.get(duplicateId) === null) {
             return duplicateId;
         }
-
-        counter++;
-
-        // 防止无限循环，最多尝试1000次
-        if (counter > 1000) {
-            throw new Error('无法生成唯一的文件ID');
-        }
     }
+
+    throw new Error('无法生成唯一的文件ID');
 }
 
 // 基于uploadId的一致性渠道选择
