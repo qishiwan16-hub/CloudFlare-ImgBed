@@ -4144,28 +4144,30 @@ function asChangeCover(){
   const albumIdx=currentAlbumIdx;
   closeAlbumSettings();
 
-  function applyCover(src){
-    userAlbums[ui].coverSrc=src;
-    saveUserAlbums();refreshAlbumData();
-    if(currentAlbumIdx===albumIdx)renderAlbumDetail();
-    showToast('封面已更换');
+  async function applyCover(src){
+    // Always crop to 1:1 before saving
+    const cropped=await openCropper(src,{aspect:1,shape:'rect',title:'裁剪封面 (1:1)'});
+    if(!cropped)return;
+    // Upload cropped blob
+    showToast('上传封面中...');
+    try{
+      const fd=new FormData();fd.append('file',new File([cropped],'cover.png',{type:'image/png'}));
+      const resp=await fetch(API.upload,{method:'POST',body:fd,credentials:'include'});
+      if(!resp.ok)throw new Error('HTTP '+resp.status);
+      const data=await resp.json();
+      if(Array.isArray(data)&&data[0]&&data[0].src){
+        userAlbums[ui].coverSrc=location.origin+data[0].src;
+        saveUserAlbums();refreshAlbumData();
+        if(currentAlbumIdx===albumIdx)renderAlbumDetail();
+        showToast('封面已更换');
+      }else{showToast('上传返回格式异常');}
+    }catch(e){showToast('封面上传失败: '+e.message);}
   }
   function doUpload(){
     const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
     inp.onchange=async()=>{
       const file=inp.files[0];if(!file)return;
-      showToast('上传中...');
-      try{
-        const fd=new FormData();fd.append('file',file);
-        const resp=await fetch(API.upload,{method:'POST',body:fd,credentials:'include'});
-        if(!resp.ok)throw new Error('HTTP '+resp.status);
-        const data=await resp.json();
-        if(Array.isArray(data)&&data[0]&&data[0].src){
-          applyCover(location.origin+data[0].src);
-        }else{
-          showToast('上传返回格式异常');console.warn('upload resp:',data);
-        }
-      }catch(e){showToast('上传失败: '+e.message);}
+      applyCover(URL.createObjectURL(file));
     };
     inp.click();
   }
