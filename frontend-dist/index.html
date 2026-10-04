@@ -3098,6 +3098,7 @@ function initUpload(){
 let uploadPageFiles=[];
 let uploadPageResults=[];
 let uploadPageUploading=false;
+let uploadPageThumbs={}; // cache blob URLs
 const CONCURRENT_UPLOADS=3;
 
 function openUploadPage(){
@@ -3111,7 +3112,8 @@ function closeUploadPage(){
   document.body.style.overflow='';
 }
 function uploadPageReset(){
-  uploadPageFiles=[];uploadPageResults=[];uploadPageUploading=false;
+  Object.values(uploadPageThumbs).forEach(u=>URL.revokeObjectURL(u));
+  uploadPageFiles=[];uploadPageResults=[];uploadPageUploading=false;uploadPageThumbs={};
   document.getElementById('uploadPageGrid').innerHTML='';
   document.getElementById('uploadPageContent').style.display='none';
   document.getElementById('uploadPageEmpty').style.display='';
@@ -3149,9 +3151,13 @@ function uploadPageRender(){
     const isImg=isImageFile(f.name,f.type);
     const isVid=isVideoFile(f.name,f.type);
     let thumb='';
-    if(isImg)thumb=`<img src="${URL.createObjectURL(f)}" loading="lazy">`;
-    else if(isVid)thumb=`<video src="${URL.createObjectURL(f)}" muted style="width:100%;height:100%;object-fit:cover"></video>`;
-    else thumb=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f3f0">${fileTypeIcon(f.name,f.type)}</div>`;
+    if(isImg||isVid){
+      if(!uploadPageThumbs[i])uploadPageThumbs[i]=URL.createObjectURL(f);
+      if(isImg)thumb=`<img src="${uploadPageThumbs[i]}" loading="lazy">`;
+      else thumb=`<video src="${uploadPageThumbs[i]}" muted style="width:100%;height:100%;object-fit:cover"></video>`;
+    }else{
+      thumb=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f3f0">${fileTypeIcon(f.name,f.type)}</div>`;
+    }
     const r=uploadPageResults[i];
     let statusClass=r==='done'?'done':r==='fail'?'fail':'';
     let statusText=r==='done'?'✓':r==='fail'?'✗':'';
@@ -3164,8 +3170,17 @@ function uploadPageRender(){
   }).join('');
 }
 function uploadPageRemove(idx){
+  if(uploadPageThumbs[idx])URL.revokeObjectURL(uploadPageThumbs[idx]);
   uploadPageFiles.splice(idx,1);
   uploadPageResults.splice(idx,1);
+  // Rebuild thumb cache with new indices
+  const newThumbs={};
+  Object.keys(uploadPageThumbs).forEach(k=>{
+    const ki=parseInt(k);
+    if(ki<idx)newThumbs[ki]=uploadPageThumbs[ki];
+    else if(ki>idx)newThumbs[ki-1]=uploadPageThumbs[ki];
+  });
+  uploadPageThumbs=newThumbs;
   uploadPageRender();
 }
 async function uploadPageStart(){
