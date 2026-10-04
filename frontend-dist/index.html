@@ -1030,7 +1030,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
 
   <div class="stat-bar fade-up fade-up-2">
     <div class="stat-item"><div class="stat-num" id="statFiles">0</div><div class="stat-label">Files</div></div>
-    <div class="stat-item"><div class="stat-num" id="statStorage">0</div><div class="stat-label">MB</div></div>
+    <div class="stat-item"><div class="stat-num" id="statStorage">0 KB</div><div class="stat-label">存储</div></div>
     <div class="stat-item"><div class="stat-num" id="statDays">1</div><div class="stat-label">Days</div></div>
   </div>
 
@@ -1509,7 +1509,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
   <div class="pp-stats">
     <div class="pp-stat"><div class="pp-stat-num" id="ppImgCount">0</div><div class="pp-stat-label">图片数量</div></div>
     <div class="pp-stat"><div class="pp-stat-num" id="ppAlbumCount">0</div><div class="pp-stat-label">相册数量</div></div>
-    <div class="pp-stat"><div class="pp-stat-num" id="ppStorage">0</div><div class="pp-stat-label">存储 (MB)</div></div>
+    <div class="pp-stat"><div class="pp-stat-num" id="ppStorage">0 KB</div><div class="pp-stat-label">存储</div></div>
     <div class="pp-stat"><div class="pp-stat-num" id="ppQuota">5</div><div class="pp-stat-label">上限 (GB)</div></div>
   </div>
   <div class="pp-divider"></div>
@@ -1884,15 +1884,15 @@ function openProfilePage(){
   document.getElementById('ppImgCount').textContent=allImages.length;
   refreshAlbumData();
   document.getElementById('ppAlbumCount').textContent=allAlbums.length;
-  document.getElementById('ppStorage').textContent=document.getElementById('statStorage')?.textContent||'0';
+  document.getElementById('ppStorage').textContent=document.getElementById('statStorage')?.textContent||'0 KB';
   // Set user quota
   try{
     const limits=JSON.parse(localStorage.getItem('imgbed_storage_limits')||'{}');
     const defaultGB=parseFloat(localStorage.getItem('imgbed_default_storage_gb'))||5;
     const sess=authGetSession();
     const quotaGB=sess?limits[sess.username]||defaultGB:defaultGB;
-    document.getElementById('ppQuota').textContent=quotaGB;
-  }catch{document.getElementById('ppQuota').textContent='5';}
+    document.getElementById('ppQuota').textContent=quotaGB+' GB';
+  }catch{document.getElementById('ppQuota').textContent='5 GB';}
   // ppAdminAction moved to admin backend
   document.getElementById('profilePage').classList.add('show');
 }
@@ -2207,9 +2207,10 @@ function compClear(){
   compUpdateStats();
 }
 function compFormatSize(b){
-  if(b<1024)return b+'B';
-  if(b<1024*1024)return (b/1024).toFixed(1)+'KB';
-  return (b/(1024*1024)).toFixed(2)+'MB';
+  if(b<1024)return b+' B';
+  if(b<1024*1024)return (b/1024).toFixed(1)+' KB';
+  if(b<1024*1024*1024)return (b/(1024*1024)).toFixed(2)+' MB';
+  return (b/(1024*1024*1024)).toFixed(2)+' GB';
 }
 function compUpdateStats(){
   document.getElementById('compFileCount').textContent=compFiles.length;
@@ -2807,10 +2808,10 @@ function checkStorageLimit(){
     if(!sess)return true;
     const limitGB=limits[sess.username]||defaultGB;
     const limitBytes=limitGB*1024*1024*1024;
-    // Estimate current usage from image count (rough: 0.5MB per file)
-    const usedBytes=allImages.length*512*1024;
+    // Use actual recorded sizes
+    const usedBytes=allImages.reduce((sum,img)=>sum+(img.size||0),0);
     if(usedBytes>=limitBytes){
-      showToast('储存空间已满 ('+limitGB+'GB)，请清理后再上传');return false;
+      showToast('储存空间已满 ('+compFormatSize(usedBytes)+' / '+limitGB+' GB)，请清理后再上传');return false;
     }
     return true;
   }catch{return true;}
@@ -2950,8 +2951,7 @@ function loadGalleryDemo(){
 function updateHomeStats(){
   document.getElementById('statFiles').textContent=allImages.length;
   const totalBytes=allImages.reduce((sum,img)=>sum+(img.size||0),0);
-  const mb=(totalBytes/(1024*1024)).toFixed(1);
-  document.getElementById('statStorage').textContent=mb;
+  document.getElementById('statStorage').textContent=compFormatSize(totalBytes);
   // Days since first image
   const first=allImages[allImages.length-1];
   if(first&&first.date){
