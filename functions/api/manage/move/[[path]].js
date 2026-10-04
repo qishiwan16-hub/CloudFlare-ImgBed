@@ -53,7 +53,7 @@ export async function onRequest(context) {
                     const fileId = file.name;
                     const fileName = file.name.split('/').pop();
                     const newFileId = `${folderDist}/${fileName}`;
-                    const cdnUrl = `https://${url.hostname}/file/${fileId}`;
+                    const cdnUrl = `https://${url.hostname}/OvO/${fileId}`;
 
                     const success = await moveFile(env, fileId, newFileId, cdnUrl, url);
                     if (success) {
@@ -105,7 +105,7 @@ export async function onRequest(context) {
         const fileId = params.path.split(',').join('/');
         const fileKey = fileId.split('/').pop();
         const newFileId = dist === '' ? fileKey : `${dist}/${fileKey}`;
-        const cdnUrl = `https://${url.hostname}/file/${fileId}`;
+        const cdnUrl = `https://${url.hostname}/OvO/${fileId}`;
 
         const success = await moveFile(env, fileId, newFileId, cdnUrl, url);
         if (!success) {

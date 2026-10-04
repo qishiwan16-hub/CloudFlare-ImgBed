@@ -456,7 +456,7 @@ async function loadImages(page){
     $('statTotal').textContent=total;
     if(!files.length){el.innerHTML='<div class="empty-state">暂无图片</div>';$('imagePagination').innerHTML='';return;}
     el.innerHTML=files.map(f=>{
-      const url=f.url||('/file/'+f.name),name=f.name||'unnamed',time=f.metadata?.TimeStamp||f.time||'',status=f.metadata?.ListType||f.listType||'None';
+      const url=f.url||('/OvO/'+f.name),name=f.name||'unnamed',time=f.metadata?.TimeStamp||f.time||'',status=f.metadata?.ListType||f.listType||'None';
       return `<div class="tool-item" onclick="previewImage('${esc(url)}','${esc(name)}')"><div class="tool-item-left"><img class="thumb" src="${esc(url)}" loading="lazy" onerror="this.style.display='none'"><div style="overflow:hidden"><div class="tool-item-name"><span class="status-dot ${esc(status)}"></span>${esc(name.split('/').pop())}</div><div class="tool-item-sub">${esc(time)}</div></div></div><div class="actions" onclick="event.stopPropagation()"><button class="act-btn ${status==='Block'?'ok':'warn'}" onclick="toggleBlock('${esc(f.name)}','${status}')">${status==='Block'?'解封':'封禁'}</button><button class="act-btn del" onclick="deleteImage('${esc(f.name)}')">删除</button></div></div>`;
     }).join('');renderPag(total);
   }catch(e){el.innerHTML=`<div class="empty-state">加载失败: ${e.message}</div>`;}
@@ -529,7 +529,7 @@ async function loadBlockedImages(){
     const d=await r.json();const files=d.files||[];const cnt=d.totalCount||files.length;
     $('cntBlocked').textContent=cnt;$('statBlocked').textContent=cnt;
     if(!files.length){el.innerHTML='<div class="empty-state">暂无封禁图片</div>';return;}
-    el.innerHTML=files.map(f=>{const url=f.url||('/file/'+f.name);return `<div class="tool-item"><div class="tool-item-left"><img class="thumb" src="${esc(url)}" loading="lazy" onerror="this.style.display='none'"><span class="tool-item-name">${esc(f.name.split('/').pop())}</span></div><button class="act-btn ok" onclick="unblockImg('${esc(f.name)}')">解封</button></div>`;}).join('');
+    el.innerHTML=files.map(f=>{const url=f.url||('/OvO/'+f.name);return `<div class="tool-item"><div class="tool-item-left"><img class="thumb" src="${esc(url)}" loading="lazy" onerror="this.style.display='none'"><span class="tool-item-name">${esc(f.name.split('/').pop())}</span></div><button class="act-btn ok" onclick="unblockImg('${esc(f.name)}')">解封</button></div>`;}).join('');
   }catch{el.innerHTML='<div class="empty-state">加载失败</div>';}
 }
 async function unblockImg(name){try{await fetch('/api/manage/white/'+encodeURIComponent(name),{method:'PUT',credentials:'include'});showToast('已解封');loadBlockedImages();loadStats();}catch{showToast('失败');}}

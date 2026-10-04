@@ -26,7 +26,7 @@ export async function onRequest(context) {
         const url = new URL(context.request.url);
         const results = await mapConcurrent(fileIds, DELETE_CONCURRENCY, async (fileId) => {
             try {
-                const cdnUrl = `${url.origin}/file/${fileId.split('/').map(encodeURIComponent).join('/')}`;
+                const cdnUrl = `${url.origin}/OvO/${fileId.split('/').map(encodeURIComponent).join('/')}`;
                 const success = await deleteFile(context.env, fileId, cdnUrl, url);
                 return { fileId, success, error: success ? '' : 'Delete file failed' };
             } catch (err) {

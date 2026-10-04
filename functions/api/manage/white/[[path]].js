@@ -18,7 +18,7 @@ export async function onRequest(context) {
     if (params.path) {
       params.path = String(params.path).split(',').join('/');
     }
-    const cdnUrl = `https://${url.hostname}/file/${params.path}`;
+    const cdnUrl = `https://${url.hostname}/OvO/${params.path}`;
 
     // 解码params.path
     params.path = decodeURIComponent(params.path);

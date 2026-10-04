@@ -170,7 +170,7 @@ export async function onRequest(context) {
         await db.delete(fileId);
 
         // 清除 CDN 缓存
-        const cdnUrl = `https://${url.hostname}/file/${fileId}`;
+        const cdnUrl = `https://${url.hostname}/OvO/${fileId}`;
         await purgeCFCache(env, cdnUrl);
 
         // 清除 api/randomFileList 等 API 缓存

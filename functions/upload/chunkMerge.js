@@ -116,7 +116,7 @@ async function startMerge(context, uploadId, totalChunks, originalFileName, orig
             // 构建公开访问链接（使用 urlPrefix 配置）
             if (result.result && result.result.length > 0) {
                 const src = result.result[0].src;
-                const fileName = src.startsWith('/file/') ? src.slice(6) : src.split('/file/').pop();
+                const fileName = src.startsWith('/OvO/') ? src.slice(5) : src.split('/OvO/').pop();
                 const pageConfig = await fetchPageConfig(env);
                 const urlPrefixConfig = pageConfig.config?.find(c => c.id === 'urlPrefix');
                 const urlPrefix = urlPrefixConfig?.value || '';
@@ -307,9 +307,9 @@ async function mergeR2ChunksInfo(context, uploadId, completedChunks, metadata) {
         const returnFormat = url.searchParams.get('returnFormat') || 'default';
         let updatedReturnLink = '';
         if (returnFormat === 'full') {
-            updatedReturnLink = `${url.origin}/file/${finalFileId}`;
+            updatedReturnLink = `${url.origin}/OvO/${finalFileId}`;
         } else {
-            updatedReturnLink = `/file/${finalFileId}`;
+            updatedReturnLink = `/OvO/${finalFileId}`;
         }
 
         return {
@@ -405,9 +405,9 @@ async function mergeS3ChunksInfo(context, uploadId, completedChunks, metadata) {
         const returnFormat = url.searchParams.get('returnFormat') || 'default';
         let updatedReturnLink = '';
         if (returnFormat === 'full') {
-            updatedReturnLink = `${url.origin}/file/${finalFileId}`;
+            updatedReturnLink = `${url.origin}/OvO/${finalFileId}`;
         } else {
-            updatedReturnLink = `/file/${finalFileId}`;
+            updatedReturnLink = `/OvO/${finalFileId}`;
         }
 
         return {
@@ -478,9 +478,9 @@ async function mergeTelegramChunksInfo(context, uploadId, completedChunks, metad
         const returnFormat = url.searchParams.get('returnFormat') || 'default';
         let updatedReturnLink = '';
         if (returnFormat === 'full') {
-            updatedReturnLink = `${url.origin}/file/${finalFileId}`;
+            updatedReturnLink = `${url.origin}/OvO/${finalFileId}`;
         } else {
-            updatedReturnLink = `/file/${finalFileId}`;
+            updatedReturnLink = `/OvO/${finalFileId}`;
         }
 
         return {
@@ -552,9 +552,9 @@ async function mergeDiscordChunksInfo(context, uploadId, completedChunks, metada
         const returnFormat = url.searchParams.get('returnFormat') || 'default';
         let updatedReturnLink = '';
         if (returnFormat === 'full') {
-            updatedReturnLink = `${url.origin}/file/${finalFileId}`;
+            updatedReturnLink = `${url.origin}/OvO/${finalFileId}`;
         } else {
-            updatedReturnLink = `/file/${finalFileId}`;
+            updatedReturnLink = `/OvO/${finalFileId}`;
         }
 
         return {

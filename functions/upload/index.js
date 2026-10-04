@@ -202,9 +202,9 @@ async function processFileUpload(context, formdata = null) {
     const returnFormat = url.searchParams.get('returnFormat') || 'default';
     let returnLink = '';
     if (returnFormat === 'full') {
-        returnLink = `${url.origin}/file/${fullId}`;
+        returnLink = `${url.origin}/OvO/${fullId}`;
     } else {
-        returnLink = `/file/${fullId}`;
+        returnLink = `/OvO/${fullId}`;
     }
 
     // 构建公开访问链接（使用 urlPrefix 配置）
@@ -430,7 +430,7 @@ async function uploadFileToS3(context, fullId, metadata, returnLink) {
                 return createResponse("Error: Failed to write to KV database", { status: 500 });
             }
 
-            const moderateUrl = `https://${url.hostname}/file/${fullId}`;
+            const moderateUrl = `https://${url.hostname}/OvO/${fullId}`;
             await purgeCDNCache(env, moderateUrl, url);
             metadata.Label = await moderateContent(env, moderateUrl);
         }
@@ -753,7 +753,7 @@ async function uploadFileToHuggingFace(context, fullId, metadata, returnLink) {
                     return createResponse('Error: Failed to write to KV database', { status: 500 });
                 }
                 
-                const moderateUrl = `https://${context.url.hostname}/file/${fullId}`;
+                const moderateUrl = `https://${context.url.hostname}/OvO/${fullId}`;
                 await purgeCDNCache(env, moderateUrl, context.url);
                 metadata.Label = await moderateContent(env, moderateUrl);
             }
@@ -831,7 +831,7 @@ async function uploadFileToWebDAV(context, fullId, metadata, returnLink) {
                     return createResponse('Error: Failed to write to database', { status: 500 });
                 }
 
-                const moderateUrl = `https://${url.hostname}/file/${fullId}`;
+                const moderateUrl = `https://${url.hostname}/OvO/${fullId}`;
                 await purgeCDNCache(env, moderateUrl, url);
                 metadata.Label = await moderateContent(env, moderateUrl);
             }

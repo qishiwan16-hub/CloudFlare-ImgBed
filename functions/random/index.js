@@ -135,7 +135,7 @@ export async function onRequest(context) {
     } else {
         const randomIndex = Math.floor(Math.random() * allRecords.length);
         const randomKey = allRecords[randomIndex];
-        const randomPath = '/file/' + randomKey.name;
+        const randomPath = '/OvO/' + randomKey.name;
         let randomUrl = randomPath;
 
         const randomType = requestUrl.searchParams.get('type');

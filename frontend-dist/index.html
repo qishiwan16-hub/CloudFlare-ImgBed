@@ -2138,7 +2138,7 @@ function adminDelete(uname){
 }
 
 const DEFAULT_CONFIG = { name:'我的图床', bio:'把喜欢的瞬间，留在这里。', avatar:'/static/media/logo.png', cover:'/img/background-light.f17603bc.jpg', galleryCount:6, avatarShape:'circle', theme:'auto' };
-const API = { upload:'/upload', list:'/api/manage/list', fileBase:'/file/', userData:'/api/user/data' };
+const API = { upload:'/upload', list:'/api/manage/list', fileBase:'/OvO/', userData:'/api/user/data' };
 
 // ===== SERVER SYNC ENGINE =====
 // Debounced writes: localStorage is instant, server push is batched
@@ -3272,20 +3272,20 @@ function copyText(btn,text){
 const DEFAULT_IMAGES=[
   {src:'/img/background-light.f17603bc.jpg',name:'bg-light.jpg',date:'今天'},
   {src:'/img/background.de27f549.jpg',name:'bg-dark.jpg',date:'今天'},
-  {src:'/file/demo-doc',name:'项目方案.docx',date:'今天'},
-  {src:'/file/demo-pdf',name:'用户手册.pdf',date:'今天'},
-  {src:'/file/demo-xls',name:'数据统计.xlsx',date:'昨天'},
-  {src:'/file/demo-ppt',name:'年度报告.pptx',date:'昨天'},
-  {src:'/file/demo-mp3',name:'背景音乐.mp3',date:'昨天'},
-  {src:'/file/demo-mp4',name:'产品演示.mp4',date:'昨天'},
-  {src:'/file/demo-zip',name:'资源包.zip',date:'3天前'},
-  {src:'/file/demo-ttf',name:'思源黑体.ttf',date:'3天前'},
-  {src:'/file/demo-psd',name:'封面设计.psd',date:'3天前'},
-  {src:'/file/demo-js',name:'main.js',date:'3天前'},
-  {src:'/file/demo-py',name:'train.py',date:'3天前'},
-  {src:'/file/demo-apk',name:'App-v2.1.apk',date:'3天前'},
-  {src:'/file/demo-sql',name:'backup.sql',date:'3天前'},
-  {src:'/file/demo-md',name:'README.md',date:'3天前'},
+  {src:'/OvO/demo-doc',name:'项目方案.docx',date:'今天'},
+  {src:'/OvO/demo-pdf',name:'用户手册.pdf',date:'今天'},
+  {src:'/OvO/demo-xls',name:'数据统计.xlsx',date:'昨天'},
+  {src:'/OvO/demo-ppt',name:'年度报告.pptx',date:'昨天'},
+  {src:'/OvO/demo-mp3',name:'背景音乐.mp3',date:'昨天'},
+  {src:'/OvO/demo-mp4',name:'产品演示.mp4',date:'昨天'},
+  {src:'/OvO/demo-zip',name:'资源包.zip',date:'3天前'},
+  {src:'/OvO/demo-ttf',name:'思源黑体.ttf',date:'3天前'},
+  {src:'/OvO/demo-psd',name:'封面设计.psd',date:'3天前'},
+  {src:'/OvO/demo-js',name:'main.js',date:'3天前'},
+  {src:'/OvO/demo-py',name:'train.py',date:'3天前'},
+  {src:'/OvO/demo-apk',name:'App-v2.1.apk',date:'3天前'},
+  {src:'/OvO/demo-sql',name:'backup.sql',date:'3天前'},
+  {src:'/OvO/demo-md',name:'README.md',date:'3天前'},
   {src:'/img/background-light.f17603bc.jpg',name:'bg-light2.jpg',date:'3天前'},
   {src:'/img/background.de27f549.jpg',name:'bg-dark2.jpg',date:'3天前'},
 ];
@@ -4295,39 +4295,37 @@ function asDelete(){
   if(ui<0){showToast('系统相册无法删除');return;}
   const album=allAlbums[currentAlbumIdx];
   const imgCount=(album.imageSrcs||[]).length;
-  gdShow({title:'删除相册',desc:'确定要删除「'+album.name+'」吗？'+(imgCount?'\n相册内有 '+imgCount+' 张图片。':''),
-    confirm:'保留图片并删除相册',cancel:'取消',
-    onConfirm:()=>{
-      // Keep images — move to uncategorized (remove from this album only)
-      userAlbums.splice(ui,1);
-      saveUserAlbums();refreshAlbumData();
-      apView='list';renderAlbumPage();closeAlbumSettings();
-      renderHomeAlbums();
-      showToast('相册已删除，图片已保留');
+  const doDelete=(keepImgs)=>{
+    if(!keepImgs){
+      const srcs=new Set(album.imageSrcs||[]);
+      if(srcs.size)allImages=allImages.filter(img=>!srcs.has(img.src));
+      saveUserImages();
     }
+    userAlbums.splice(ui,1);
+    saveUserAlbums();refreshAlbumData();
+    apView='list';renderAlbumPage();closeAlbumSettings();
+    renderHomeAlbums();renderHomeGallery();updateHomeStats();
+    document.getElementById('gdOverlay').classList.remove('show');
+    showToast(keepImgs?'相册已删除，图片已保留':'相册和图片已全部删除');
+  };
+  // Build custom 3-button dialog
+  gdShow({title:'删除相册',desc:'确定要删除「'+album.name+'」吗？'+(imgCount?'\n相册内有 '+imgCount+' 张图片。':''),
+    confirm:'保留图片',cancel:'取消',
+    onConfirm:()=>doDelete(true)
   });
-  // Add a secondary "delete all" button after popup shows
   if(imgCount){
     setTimeout(()=>{
       const popup=document.querySelector('#gdOverlay.show .gd-popup');
       if(!popup)return;
-      const extraBtn=document.createElement('button');
-      extraBtn.textContent='删除相册和所有图片';
-      extraBtn.style.cssText='width:100%;padding:10px;border:none;background:none;color:#c06060;font-size:13px;font-weight:600;cursor:pointer;border-top:1px solid #f0ede9;margin-top:8px';
-      extraBtn.onclick=()=>{
-        // Remove images from allImages
-        const srcs=new Set(album.imageSrcs||[]);
-        if(srcs.size)allImages=allImages.filter(img=>!srcs.has(img.src));
-        saveUserImages();
-        userAlbums.splice(ui,1);
-        saveUserAlbums();refreshAlbumData();
-        apView='list';renderAlbumPage();closeAlbumSettings();
-        renderHomeAlbums();renderHomeGallery();updateHomeStats();
-        document.getElementById('gdOverlay').classList.remove('show');
-        showToast('相册和图片已全部删除');
-      };
-      popup.appendChild(extraBtn);
-    },100);
+      const actions=popup.querySelector('.gd-actions');
+      if(!actions)return;
+      const delBtn=document.createElement('button');
+      delBtn.className='gd-btn';
+      delBtn.textContent='连图片一起删除';
+      delBtn.style.cssText='color:#c06060;font-weight:600';
+      delBtn.onclick=()=>doDelete(false);
+      actions.insertBefore(delBtn,actions.lastElementChild);
+    },50);
   }
 }
 
