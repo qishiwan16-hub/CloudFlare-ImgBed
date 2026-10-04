@@ -1565,20 +1565,27 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
       </div>
       <input type="file" id="zipupFileInput" accept=".zip,application/zip,application/x-zip-compressed" style="display:none">
       <div id="zipupContent" style="display:none">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span id="zipupFileName" style="font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-          <span id="zipupCount" style="font-size:12px;color:#999;white-space:nowrap"></span>
+        <div style="background:linear-gradient(135deg,#f8f6f3,#efeae4);border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#ffa726,#ff7043);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(255,112,67,.3)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" width="24" height="24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M10 8h4M10 12h4M10 16h4"/></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div id="zipupFileName" style="font-size:14px;font-weight:700;color:#2c2c2c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+            <div style="display:flex;gap:12px;margin-top:4px">
+              <span id="zipupCount" style="font-size:12px;color:#888"></span>
+              <span id="zipupTotalSize" style="font-size:12px;color:#888"></span>
+            </div>
+          </div>
         </div>
-        <div id="zipupList" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px"></div>
-        <div id="zipupProgress" style="display:none;margin-bottom:10px">
+        <div id="zipupList" style="max-height:260px;overflow-y:auto;border-radius:12px;background:#faf8f6;border:1px solid #ece8e3"></div>
+        <div id="zipupProgress" style="display:none;margin:12px 0">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:4px"><span id="zipupProgressText">上传中...</span><span id="zipupProgressNum">0/0</span></div>
           <div style="height:4px;background:#e8e4df;border-radius:2px;overflow:hidden"><div id="zipupProgressBar" style="height:100%;background:#2c2c2c;border-radius:2px;width:0%;transition:width .3s"></div></div>
         </div>
-        <div class="comp-actions">
+        <div class="comp-actions" style="margin-top:14px">
           <button class="comp-btn primary" id="zipupStartBtn" onclick="zipupStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>一键上传</button>
           <button class="comp-btn" onclick="zipupClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>
         </div>
-        <div id="zipupResults" style="display:none;margin-top:12px"></div>
       </div>
     </div>
   </div>
@@ -2747,6 +2754,8 @@ document.getElementById('zipupFileInput').addEventListener('change',async(e)=>{
     _zipupName=cleanFileName(f.name).replace(/\.[^.]+$/,'');
     document.getElementById('zipupFileName').textContent=cleanFileName(f.name);
     document.getElementById('zipupCount').textContent=_zipupFiles.length+' 张图片';
+    const totalSize=_zipupFiles.reduce((s,zf)=>s+zf.file.size,0);
+    document.getElementById('zipupTotalSize').textContent='共 '+compFormatSize(totalSize);
     zipupRenderList();
     document.getElementById('zipupUploadArea').style.display='none';
     document.getElementById('zipupContent').style.display='';
@@ -2757,11 +2766,11 @@ document.getElementById('zipupFileInput').addEventListener('change',async(e)=>{
 });
 function zipupRenderList(){
   const el=document.getElementById('zipupList');
-  el.innerHTML=_zipupFiles.map((zf,i)=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0ede9">'+
-    '<img src="'+zf.url+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;flex-shrink:0">'+
-    '<span style="flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+zf.file.name+'</span>'+
-    '<span style="font-size:11px;color:#999;flex-shrink:0">'+compFormatSize(zf.file.size)+'</span>'+
-    '<span id="zipupSt_'+i+'" style="font-size:11px;flex-shrink:0;width:16px;text-align:center">'+(zf.status==='done'?'✓':zf.status==='error'?'✗':'')+'</span>'+
+  el.innerHTML=_zipupFiles.map((zf,i)=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;'+(i<_zipupFiles.length-1?'border-bottom:1px solid #ece8e3;':'')+'">'+
+    '<img src="'+zf.url+'" style="width:40px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.1)">'+
+    '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#2c2c2c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+zf.file.name+'</div>'+
+    '<div style="font-size:11px;color:#aaa;margin-top:2px">'+compFormatSize(zf.file.size)+'</div></div>'+
+    '<span id="zipupSt_'+i+'" style="font-size:14px;flex-shrink:0;width:20px;text-align:center">'+(zf.status==='done'?'<span style="color:#6a9a6a">✓</span>':zf.status==='error'?'<span style="color:#e88">✗</span>':'')+'</span>'+
     '</div>').join('');
 }
 async function zipupStart(){
@@ -2790,7 +2799,7 @@ async function zipupStart(){
       }else throw new Error('Bad response');
     }catch(e){zf.status='error';}
     const st=document.getElementById('zipupSt_'+i);
-    if(st)st.textContent=zf.status==='done'?'✓':'✗';
+    if(st)st.innerHTML=zf.status==='done'?'<span style="color:#6a9a6a">✓</span>':'<span style="color:#e88">✗</span>';
   }
   // Auto-create album
   if(results.length>0){
