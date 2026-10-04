@@ -1460,6 +1460,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
     <div class="comp-tabs">
       <button class="comp-tab active" onclick="switchToolTab('compress')" id="tabCompress">压缩 / 转换</button>
       <button class="comp-tab" onclick="switchToolTab('migrate')" id="tabMigrate">图床迁移</button>
+      <button class="comp-tab" onclick="switchToolTab('zipdown')" id="tabZipdown">打包下载</button>
     </div>
     <!-- TAB: 压缩 -->
     <div class="comp-tab-content" id="tabContentCompress">
@@ -1552,6 +1553,27 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
             <button class="comp-btn" onclick="migrateDownload()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载文件</button>
             <button class="comp-btn" onclick="migrateClear()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- TAB: 打包下载 -->
+    <div class="comp-tab-content" id="tabContentZipdown" style="display:none">
+      <div style="padding:12px 0 8px;font-size:12px;color:#999">选择相册或图片，打包为 ZIP 下载</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:13px;font-weight:600;color:#2c2c2c">选择来源</div>
+        <select id="zipdownSource" onchange="zipdownSourceChange()" style="padding:10px 12px;border-radius:10px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:13px">
+          <option value="all">全部图片</option>
+        </select>
+        <div id="zipdownPreview" style="max-height:200px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px;padding:4px 0"></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="zipdownCount" style="font-size:12px;color:#999">0 张图片</span>
+          <span style="flex:1"></span>
+          <button class="comp-btn primary" id="zipdownBtn" onclick="zipdownStart()" style="min-width:120px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>打包下载</button>
+        </div>
+        <div id="zipdownProgress" style="display:none">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:4px"><span id="zipdownProgressText">打包中...</span><span id="zipdownProgressNum">0/0</span></div>
+          <div style="height:4px;background:#e8e4df;border-radius:2px;overflow:hidden"><div id="zipdownProgressBar" style="height:100%;background:#2c2c2c;border-radius:2px;width:0%;transition:width .3s"></div></div>
         </div>
       </div>
     </div>
@@ -2456,9 +2478,11 @@ function compDownloadAll(){
 // ===== TAB SWITCHING =====
 function switchToolTab(tab){
   document.querySelectorAll('.comp-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(tab==='compress'?'tabCompress':'tabMigrate').classList.add('active');
+  document.getElementById(tab==='compress'?'tabCompress':tab==='migrate'?'tabMigrate':'tabZipdown').classList.add('active');
   document.getElementById('tabContentCompress').style.display=tab==='compress'?'':'none';
   document.getElementById('tabContentMigrate').style.display=tab==='migrate'?'':'none';
+  document.getElementById('tabContentZipdown').style.display=tab==='zipdown'?'':'none';
+  if(tab==='zipdown')zipdownInit();
 }
 function openMigrator(){
   document.getElementById('compOverlay').classList.add('show');
@@ -2640,6 +2664,71 @@ function migrateClear(){
   document.getElementById('migrateUploadArea').style.display='';
   document.getElementById('migrateContent').style.display='none';
   closeMigrateLinks();
+}
+// ===== ZIP DOWNLOAD =====
+function zipdownInit(){
+  const sel=document.getElementById('zipdownSource');
+  sel.innerHTML='<option value="all">全部图片 ('+allImages.length+')</option>';
+  userAlbums.forEach((a,i)=>{
+    const cnt=(a.imageSrcs||[]).length;
+    sel.innerHTML+='<option value="album_'+i+'">'+a.name+' ('+cnt+')</option>';
+  });
+  zipdownSourceChange();
+}
+function zipdownGetImages(){
+  const val=document.getElementById('zipdownSource').value;
+  if(val==='all')return allImages.map(img=>({src:img.src,name:img.name||'image'}));
+  const m=val.match(/^album_(\d+)$/);
+  if(m){const a=userAlbums[parseInt(m[1])];if(!a)return [];return(a.imageSrcs||[]).map((url,i)=>{const img=allImages.find(im=>im.src===url);return{src:url,name:img?.name||('image-'+(i+1))};});}
+  return [];
+}
+function zipdownSourceChange(){
+  const imgs=zipdownGetImages();
+  document.getElementById('zipdownCount').textContent=imgs.length+' 张图片';
+  const prev=document.getElementById('zipdownPreview');
+  prev.innerHTML=imgs.slice(0,20).map(img=>'<img src="'+img.src+'" style="width:42px;height:42px;object-fit:cover;border-radius:6px">').join('')+(imgs.length>20?'<span style="font-size:11px;color:#999;align-self:center">+'+( imgs.length-20)+'</span>':'');
+  document.getElementById('zipdownBtn').disabled=imgs.length===0;
+}
+async function zipdownStart(){
+  const imgs=zipdownGetImages();
+  if(!imgs.length){showToast('没有图片');return;}
+  const btn=document.getElementById('zipdownBtn');
+  btn.disabled=true;btn.textContent='打包中...';
+  const prog=document.getElementById('zipdownProgress');
+  prog.style.display='';
+  try{
+    const zip=new JSZip();
+    const usedNames={};
+    for(let i=0;i<imgs.length;i++){
+      document.getElementById('zipdownProgressText').textContent='下载 '+(i+1)+'/'+imgs.length;
+      document.getElementById('zipdownProgressNum').textContent=(i+1)+'/'+imgs.length;
+      document.getElementById('zipdownProgressBar').style.width=((i+1)/imgs.length*80)+'%';
+      try{
+        const resp=await fetch(imgs[i].src);
+        if(!resp.ok)continue;
+        const blob=await resp.blob();
+        let fname=cleanFileName(imgs[i].name)||('image-'+(i+1));
+        const ext=fname.includes('.')?'':'.'+( blob.type.split('/')[1]||'png');
+        if(ext)fname+=ext;
+        // Deduplicate
+        if(usedNames[fname]){let c=1;const base=fname.replace(/\.[^.]+$/,''),e=fname.slice(base.length);while(usedNames[base+'-'+c+e])c++;fname=base+'-'+c+e;}
+        usedNames[fname]=true;
+        zip.file(fname,blob);
+      }catch(e){}
+    }
+    document.getElementById('zipdownProgressText').textContent='生成ZIP...';
+    document.getElementById('zipdownProgressBar').style.width='90%';
+    const content=await zip.generateAsync({type:'blob'});
+    document.getElementById('zipdownProgressBar').style.width='100%';
+    const val=document.getElementById('zipdownSource').value;
+    let zipName='images';
+    if(val.startsWith('album_')){const a=userAlbums[parseInt(val.slice(6))];if(a)zipName=a.name;}
+    const a=document.createElement('a');a.href=URL.createObjectURL(content);a.download=zipName+'.zip';a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('打包完成');
+  }catch(e){showToast('打包失败: '+e.message);}
+  btn.disabled=false;btn.textContent='打包下载';
+  prog.style.display='none';
 }
 // ===== IMAGE CROPPER =====
 let cropImg=null,cropX=0,cropY=0,cropScale=1,cropRot=0,cropAspect=1,cropShape='circle',cropCallback=null;
@@ -2868,7 +2957,7 @@ function initUpload(){
   input.addEventListener('change',(e)=>{if(e.target.files.length>0)handleFiles(Array.from(e.target.files));input.value='';});
   ['dragenter','dragover'].forEach(ev=>area.addEventListener(ev,(e)=>{e.preventDefault();area.classList.add('drag-over');}));
   ['dragleave','drop'].forEach(ev=>area.addEventListener(ev,(e)=>{e.preventDefault();area.classList.remove('drag-over');}));
-  area.addEventListener('drop',async(e)=>{const files=Array.from(e.dataTransfer.files);if(files.length>0){for(const f of files){if(f.name.toLowerCase().endsWith('.zip')||f.type==='application/zip'||f.type==='application/x-zip-compressed'){try{const zip=await JSZip.loadAsync(f);const imgExts=['png','jpg','jpeg','gif','webp','avif','bmp','svg','ico','tiff'];const entries=[];zip.forEach((path,entry)=>{if(entry.dir)return;const ext=path.split('.').pop().toLowerCase();if(imgExts.includes(ext))entries.push({path,entry});});entries.sort((a,b)=>a.path.localeCompare(b.path));for(const{path,entry}of entries){const blob=await entry.async('blob');const name=path.split('/').pop();const ext=name.split('.').pop().toLowerCase();const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',avif:'image/avif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tiff:'image/tiff'};uploadPageFiles.push(new File([blob],name,{type:mimeMap[ext]||'image/png'}));}showToast('从 '+f.name+' 提取了 '+entries.length+' 张图片');}catch(err){showToast('解压失败');}}else{uploadPageFiles.push(f);}}openUploadPage();uploadPageRender();}});
+  area.addEventListener('drop',async(e)=>{const files=Array.from(e.dataTransfer.files);if(files.length>0){for(const f of files){if(f.name.toLowerCase().endsWith('.zip')||f.type==='application/zip'||f.type==='application/x-zip-compressed'){try{const zip=await JSZip.loadAsync(f);const imgExts=['png','jpg','jpeg','gif','webp','avif','bmp','svg','ico','tiff'];const entries=[];zip.forEach((path,entry)=>{if(entry.dir)return;const ext=path.split('.').pop().toLowerCase();if(imgExts.includes(ext))entries.push({path,entry});});entries.sort((a,b)=>a.path.localeCompare(b.path));for(const{path,entry}of entries){const blob=await entry.async('blob');const name=path.split('/').pop();const ext=name.split('.').pop().toLowerCase();const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',avif:'image/avif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tiff:'image/tiff'};uploadPageFiles.push(new File([blob],name,{type:mimeMap[ext]||'image/png'}));}const zipAlbum=cleanFileName(f.name).replace(/\.[^.]+$/,'');for(let zi=uploadPageFiles.length-entries.length;zi<uploadPageFiles.length;zi++){uploadPageFiles[zi]._zipAlbum=zipAlbum;}showToast('从 '+f.name+' 提取了 '+entries.length+' 张图片');}catch(err){showToast('解压失败');}}else{uploadPageFiles.push(f);}}openUploadPage();uploadPageRender();}});
   document.addEventListener('paste',(e)=>{const f=Array.from(e.clipboardData.items).filter(i=>i.kind==='file').map(i=>i.getAsFile()).filter(Boolean);if(f.length>0){e.preventDefault();uploadPageFiles=f;openUploadPage();uploadPageRender();}});
   // Upload page file input
   document.getElementById('uploadPageFileInput').addEventListener('change',async(e)=>{
@@ -2894,6 +2983,9 @@ function initUpload(){
               const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',avif:'image/avif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tiff:'image/tiff'};
               uploadPageFiles.push(new File([blob],name,{type:mimeMap[ext]||'image/png'}));
             }
+            // Tag extracted files with ZIP album name
+            const zipAlbum=cleanFileName(f.name).replace(/\.[^.]+$/,'');
+            for(let zi=uploadPageFiles.length-entries.length;zi<uploadPageFiles.length;zi++){uploadPageFiles[zi]._zipAlbum=zipAlbum;}
             showToast('从 '+f.name+' 提取了 '+entries.length+' 张图片');
           }catch(err){showToast('解压失败: '+err.message);}
         }else{
@@ -3009,7 +3101,7 @@ async function uploadPageStart(){
           uploadPageResults[i]='done';
           if(data&&data[0]){
             const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;
-            results.push({name:cleanFileName(file.name),src,fullUrl,aliases:al});
+            results.push({name:cleanFileName(file.name),src,fullUrl,aliases:al,zipAlbum:file._zipAlbum||''});
             allImages.unshift({src:fullUrl,name:cleanFileName(file.name),date:new Date().toLocaleDateString('zh-CN'),size:file.size||0,aliases:al});
           }
         }else throw new Error('HTTP '+resp.status);
@@ -3030,18 +3122,27 @@ async function uploadPageStart(){
   const workers=[];
   for(let w=0;w<CONCURRENT_UPLOADS;w++)workers.push(next());
   await Promise.all(workers);
-  // Add to album if selected
+  // Auto-create albums for ZIP uploads
+  const zipGroups={};
+  results.forEach(r=>{if(r.zipAlbum){if(!zipGroups[r.zipAlbum])zipGroups[r.zipAlbum]=[];zipGroups[r.zipAlbum].push(r.fullUrl);}});
+  Object.keys(zipGroups).forEach(albumName=>{
+    let existing=userAlbums.find(a=>a.name===albumName);
+    if(!existing){existing={name:albumName,imageSrcs:[],color:'',category:'',visibility:'public',coverSrc:''};userAlbums.push(existing);}
+    if(!existing.imageSrcs)existing.imageSrcs=[];
+    zipGroups[albumName].forEach(url=>{if(!existing.imageSrcs.includes(url))existing.imageSrcs.push(url);});
+  });
+  // Add to manually selected album (non-ZIP files only)
   const albumSel=document.getElementById('uploadPageAlbum').value;
   if(albumSel!==''&&results.length>0){
     const aIdx=parseInt(albumSel);
     if(userAlbums[aIdx]){
       if(!userAlbums[aIdx].imageSrcs)userAlbums[aIdx].imageSrcs=[];
       results.forEach(r=>{
-        if(!userAlbums[aIdx].imageSrcs.includes(r.fullUrl))userAlbums[aIdx].imageSrcs.unshift(r.fullUrl);
+        if(!r.zipAlbum&&!userAlbums[aIdx].imageSrcs.includes(r.fullUrl))userAlbums[aIdx].imageSrcs.unshift(r.fullUrl);
       });
-      saveUserAlbums();
     }
   }
+  if(Object.keys(zipGroups).length>0||albumSel!=='')saveUserAlbums();
   if(results.length>0){
     saveUserImages();renderHomeGallery();renderHomeAlbums();
     updateHomeStats();
