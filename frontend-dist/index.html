@@ -452,7 +452,7 @@ img{display:block;max-width:100%}
 .fc-flip-hint svg{width:16px;height:16px;color:#fff}
 .fc-info{flex:1;padding:16px 20px 20px;display:flex;flex-direction:column;justify-content:center}
 .fc-name{font-size:15px;font-weight:700;color:#2c2c2c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
-.fc-link{font-size:11px;color:#b0a89f;word-break:break-all;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px}
+.fc-link{display:none}
 .fc-actions{display:flex;gap:8px;margin-top:auto;padding-bottom:2px}
 .fc-copy-btn{flex:1;padding:10px 0;border-radius:10px;background:#f5f2ee;border:none;font-size:11px;font-weight:600;color:#6a6a6a;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
 .fc-copy-btn:active{transform:scale(.96)}
@@ -1199,7 +1199,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
         </div>
         <div class="fc-info">
           <div class="fc-name" id="fcName"></div>
-          <div class="fc-link" id="fcLink"></div>
+
           <div class="fc-actions">
             <button class="fc-copy-btn" id="fcCopyUrl" onclick="fcCopyLink(this,'url')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>复制链接</button>
             <button class="fc-copy-btn" onclick="fcCopyLink(this,'md')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Markdown</button>
@@ -3954,7 +3954,7 @@ function fcUpdate(){
     document.getElementById('fcBackThumb').src=img.src;
   }
   document.getElementById('fcName').textContent=img.name||'image';
-  document.getElementById('fcLink').textContent=fullUrl;
+  // fcLink removed — direct URL hidden from front card
   document.getElementById('fcBackThumb').src=img.src;
   document.getElementById('fcBackName').textContent=img.name||'image';
   document.getElementById('fcBackMeta').textContent=(img.date||'');
