@@ -114,6 +114,9 @@ export function sanitizeFileName(fileName) {
     fileName = decodeURIComponent(fileName);
     fileName = fileName.split('/').pop();
 
+    // Remove Android browser auto-prepended 13-digit timestamp prefix
+    fileName = fileName.replace(/^\d{13,}_/, '');
+
     const unsafeCharsRe = /[\\\/:\*\?"'<>\| \(\)\[\]\{\}#%\^`~;@&=\+\$,]/g;
     return fileName.replace(unsafeCharsRe, '_');
 }
@@ -455,8 +458,6 @@ export async function buildUniqueFileId(context, fileName, fileType = 'applicati
 
     // 处理文件名，移除特殊字符
     fileName = sanitizeFileName(fileName);
-
-    console.log('[buildUniqueFileId v2] nameType=', nameType, 'fileName=', fileName);
 
     const unique_index = Date.now() + Math.floor(Math.random() * 10000);
     let baseId = '';

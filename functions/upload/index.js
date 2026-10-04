@@ -135,6 +135,8 @@ async function processFileUpload(context, formdata = null) {
     const file = formdata.get('file');
     const fileType = file.type;
     let fileName = file.name;
+    // Remove Android browser auto-prepended 13-digit timestamp prefix
+    fileName = fileName.replace(/^\d{13,}_/, '');
     const fileSizeBytes = file.size; // 文件大小，单位字节
     const fileSize = (fileSizeBytes / 1024 / 1024).toFixed(2); // 文件大小，单位MB
 
