@@ -371,6 +371,13 @@ img{display:block;max-width:100%}
 .ap-select-bar.show{display:block}
 .ap-select-bar .gp-select-bar-inner{display:flex;gap:10px;max-width:460px;margin:0 auto}
 .ap-acard.selected{outline:3px solid #2c2c2c;outline-offset:-3px;opacity:.75}
+.ap-gimg{position:relative;cursor:pointer}
+.ap-gimg .select-circle{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.15);display:none;align-items:center;justify-content:center;z-index:3;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.ap-gimg .select-circle svg{width:14px;height:14px;color:#fff;opacity:0}
+.album-select-mode .ap-gimg .select-circle{display:flex}
+.ap-gimg.selected .select-circle{background:#2c2c2c;border-color:#2c2c2c}
+.ap-gimg.selected .select-circle svg{opacity:1}
+.album-select-mode .ap-gimg.selected img{opacity:.75}
 .ap-acard .aac-sel{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.15);display:none;align-items:center;justify-content:center;z-index:3}
 .album-select-mode .ap-acard .aac-sel{display:flex}
 .ap-acard.selected .aac-sel{background:#2c2c2c;border-color:#2c2c2c}
@@ -1161,6 +1168,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
       <div class="ap-stat-item"><div class="ap-stat-num" id="apDetPending">0</div><div class="ap-stat-label">PENDING</div></div>
     </div>
     <div class="ap-tabs" id="apTabs"></div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;padding:4px 16px 0"><span id="apImgCount" style="font-size:11px;color:#999;margin-right:auto"></span><button class="gp-manage-btn" id="apImgManageBtn">管理</button></div>
     <div class="ap-content" id="apContent"></div>
   </div>
   <div class="ap-select-bar" id="apSelectBar"><div class="gp-select-bar-inner">
@@ -1436,7 +1444,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
       </button>
     </div>
   </div>
-  <input type="file" id="uploadPageFileInput" multiple accept="*/*" style="display:none">
+  <input type="file" id="uploadPageFileInput" multiple accept="*/*,.zip" style="display:none">
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1552,13 +1560,13 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
 
 <!-- MIGRATE LINKS POPUP -->
 <div class="gd-overlay" id="migrateLinkOverlay" style="display:none;z-index:300" onclick="if(event.target===this)closeMigrateLinks()">
-  <div class="gd-popup" style="max-height:80vh;display:flex;flex-direction:column">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #e8e4df">
+  <div style="width:92%;max-width:500px;max-height:82vh;background:#fff;border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #e8e4df;flex-shrink:0">
       <span style="font-size:15px;font-weight:700">迁移结果</span>
       <button onclick="closeMigrateLinks()" style="border:none;background:none;cursor:pointer;padding:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
-    <div style="padding:8px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0ede9">
-      <label style="font-size:12px;color:#999;white-space:nowrap">链接格式</label>
+    <div style="padding:10px 20px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0ede9;flex-shrink:0">
+      <label style="font-size:12px;color:#999;white-space:nowrap">格式</label>
       <select id="migrateLinkFmtPopup" onchange="migrateRenderPopup()" style="flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:12px">
         <option value="original">原始文件名</option>
         <option value="timestamp">时间戳</option>
@@ -1566,7 +1574,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
       </select>
       <button onclick="migrateCopyAll()" style="border:none;background:#2c2c2c;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">一键复制</button>
     </div>
-    <div id="migrateLinkList" style="flex:1;overflow-y:auto;padding:0 20px"></div>
+    <div id="migrateLinkList" style="flex:1;overflow-y:auto;padding:0 16px"></div>
   </div>
 </div>
 
@@ -1704,6 +1712,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 // ===================== AUTH SYSTEM =====================
 const AUTH_USERS_KEY='imgbed_users';
@@ -2517,7 +2526,11 @@ async function migrateStart(){
       const resp=await fetch(link.url);
       if(!resp.ok)throw new Error('HTTP '+resp.status);
       const blob=await resp.blob();
-      const fileName=link.url.split('/').pop().split('?')[0]||'image.png';
+      const origFileName=link.url.split('/').pop().split('?')[0]||'image.png';
+      const ext=origFileName.includes('.')?origFileName.split('.').pop():'png';
+      const baseName=(_migrateFile?.name||'migrate').replace(/\.[^.]+$/,'');
+      const seqNum=String(i+1).padStart(2,'0');
+      const fileName=baseName+'-'+seqNum+'.'+ext;
       const fd=new FormData();
       fd.append('file',new File([blob],fileName,{type:blob.type||'image/png'}));
       const upResp=await fetch(API.upload,{method:'POST',body:fd,credentials:'include'});
@@ -2855,11 +2868,40 @@ function initUpload(){
   input.addEventListener('change',(e)=>{if(e.target.files.length>0)handleFiles(Array.from(e.target.files));input.value='';});
   ['dragenter','dragover'].forEach(ev=>area.addEventListener(ev,(e)=>{e.preventDefault();area.classList.add('drag-over');}));
   ['dragleave','drop'].forEach(ev=>area.addEventListener(ev,(e)=>{e.preventDefault();area.classList.remove('drag-over');}));
-  area.addEventListener('drop',(e)=>{const f=Array.from(e.dataTransfer.files);if(f.length>0){uploadPageFiles=Array.from(e.dataTransfer.files);openUploadPage();uploadPageRender();}});
+  area.addEventListener('drop',async(e)=>{const files=Array.from(e.dataTransfer.files);if(files.length>0){for(const f of files){if(f.name.toLowerCase().endsWith('.zip')||f.type==='application/zip'||f.type==='application/x-zip-compressed'){try{const zip=await JSZip.loadAsync(f);const imgExts=['png','jpg','jpeg','gif','webp','avif','bmp','svg','ico','tiff'];const entries=[];zip.forEach((path,entry)=>{if(entry.dir)return;const ext=path.split('.').pop().toLowerCase();if(imgExts.includes(ext))entries.push({path,entry});});entries.sort((a,b)=>a.path.localeCompare(b.path));for(const{path,entry}of entries){const blob=await entry.async('blob');const name=path.split('/').pop();const ext=name.split('.').pop().toLowerCase();const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',avif:'image/avif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tiff:'image/tiff'};uploadPageFiles.push(new File([blob],name,{type:mimeMap[ext]||'image/png'}));}showToast('从 '+f.name+' 提取了 '+entries.length+' 张图片');}catch(err){showToast('解压失败');}}else{uploadPageFiles.push(f);}}openUploadPage();uploadPageRender();}});
   document.addEventListener('paste',(e)=>{const f=Array.from(e.clipboardData.items).filter(i=>i.kind==='file').map(i=>i.getAsFile()).filter(Boolean);if(f.length>0){e.preventDefault();uploadPageFiles=f;openUploadPage();uploadPageRender();}});
   // Upload page file input
-  document.getElementById('uploadPageFileInput').addEventListener('change',(e)=>{
-    if(e.target.files.length>0){uploadPageFiles.push(...Array.from(e.target.files));uploadPageRender();}
+  document.getElementById('uploadPageFileInput').addEventListener('change',async(e)=>{
+    if(e.target.files.length>0){
+      const files=Array.from(e.target.files);
+      for(const f of files){
+        if(f.name.toLowerCase().endsWith('.zip')||f.type==='application/zip'||f.type==='application/x-zip-compressed'){
+          try{
+            showToast('正在解压 '+f.name+'...');
+            const zip=await JSZip.loadAsync(f);
+            const imgExts=['png','jpg','jpeg','gif','webp','avif','bmp','svg','ico','tiff'];
+            const entries=[];
+            zip.forEach((path,entry)=>{
+              if(entry.dir)return;
+              const ext=path.split('.').pop().toLowerCase();
+              if(imgExts.includes(ext))entries.push({path,entry});
+            });
+            entries.sort((a,b)=>a.path.localeCompare(b.path));
+            for(const {path,entry} of entries){
+              const blob=await entry.async('blob');
+              const name=path.split('/').pop();
+              const ext=name.split('.').pop().toLowerCase();
+              const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',avif:'image/avif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tiff:'image/tiff'};
+              uploadPageFiles.push(new File([blob],name,{type:mimeMap[ext]||'image/png'}));
+            }
+            showToast('从 '+f.name+' 提取了 '+entries.length+' 张图片');
+          }catch(err){showToast('解压失败: '+err.message);}
+        }else{
+          uploadPageFiles.push(f);
+        }
+      }
+      uploadPageRender();
+    }
     e.target.value='';
   });
 }
@@ -3488,6 +3530,7 @@ const albumCategories=['all',...getAlbumCategories()];
 
 function initAlbumPage(){
   document.getElementById('apBackBtn').addEventListener('click',()=>{
+    if(apImgSelectMode){exitApImgSelectMode();return;}
     if(albumSelectMode){exitAlbumSelectMode();return;}
     if(apView==='detail'){apView='list';renderAlbumPage();return;}
     closeAlbumPage();
@@ -3495,9 +3538,10 @@ function initAlbumPage(){
   document.getElementById('apPrev').addEventListener('click',()=>{if(currentAlbumIdx>0){currentAlbumIdx--;renderAlbumDetail();}});
   document.getElementById('apNext').addEventListener('click',()=>{if(currentAlbumIdx<allAlbums.length-1){currentAlbumIdx++;renderAlbumDetail();}});
   document.getElementById('apSearchBtn').addEventListener('click',()=>apSearch());
-  document.getElementById('apCancelSelBtn').addEventListener('click',exitAlbumSelectMode);
-  document.getElementById('apDeleteSelBtn').addEventListener('click',deleteSelectedAlbums);
-  document.getElementById('apSelectAllBtn').addEventListener('click',selectAllAlbums);
+  document.getElementById('apCancelSelBtn').addEventListener('click',()=>{if(apImgSelectMode)exitApImgSelectMode();else exitAlbumSelectMode();});
+  document.getElementById('apDeleteSelBtn').addEventListener('click',()=>{if(apImgSelectMode)deleteSelectedApImgs();else deleteSelectedAlbums();});
+  document.getElementById('apSelectAllBtn').addEventListener('click',()=>{if(apImgSelectMode)selectAllApImgs();else selectAllAlbums();});
+  document.getElementById('apImgManageBtn').addEventListener('click',()=>{if(apImgSelectMode)exitApImgSelectMode();else enterApImgSelectMode();});
   // Touch swipe on detail
   const track=document.getElementById('apTrack');
   let sx=0,dx=0;
@@ -3738,9 +3782,11 @@ function apOpenDetail(idx){
 }
 
 function renderAlbumDetail(){
+  if(apImgSelectMode)exitApImgSelectMode();
   const album=allAlbums[currentAlbumIdx];
   if(!album) return;
   document.getElementById('apNavTitle').textContent=album.name;
+  document.getElementById('apImgCount').textContent='共 '+album.images.length+' 张';
   const track=document.getElementById('apTrack');
   let ch='';
   allAlbums.forEach((a,i)=>{
@@ -3828,6 +3874,69 @@ function toggleFav(src){
   renderApContent();
 }
 
+let apImgSelectMode=false,apImgSelectedSet=new Set();
+function enterApImgSelectMode(){
+  apImgSelectMode=true;apImgSelectedSet.clear();
+  document.getElementById('albumPage').classList.add('album-select-mode');
+  document.getElementById('apSelectBar').classList.add('show');
+  document.getElementById('apImgManageBtn').textContent='完成';
+  updateApImgSelectCount();
+}
+function exitApImgSelectMode(){
+  apImgSelectMode=false;apImgSelectedSet.clear();
+  document.getElementById('albumPage').classList.remove('album-select-mode');
+  document.getElementById('apSelectBar').classList.remove('show');
+  document.getElementById('apImgManageBtn').textContent='管理';
+  document.querySelectorAll('.ap-gimg.selected').forEach(el=>el.classList.remove('selected'));
+}
+function toggleApImgSelect(el){
+  const aidx=el.dataset.aidx;
+  if(apImgSelectedSet.has(aidx)){apImgSelectedSet.delete(aidx);el.classList.remove('selected');}
+  else{apImgSelectedSet.add(aidx);el.classList.add('selected');}
+  updateApImgSelectCount();
+}
+function updateApImgSelectCount(){
+  const album=allAlbums[currentAlbumIdx];
+  const total=album?album.images.length:0;
+  document.getElementById('apDeleteSelBtn').textContent=apImgSelectedSet.size>0?'删除 ('+apImgSelectedSet.size+')':'删除';
+  document.getElementById('apSelectAllBtn').textContent=apImgSelectedSet.size===total?'取消全选':'全选';
+}
+function selectAllApImgs(){
+  if(!apImgSelectMode)enterApImgSelectMode();
+  const album=allAlbums[currentAlbumIdx];
+  if(!album)return;
+  const items=document.querySelectorAll('.ap-gimg[data-aidx]');
+  if(apImgSelectedSet.size===items.length){
+    apImgSelectedSet.clear();items.forEach(el=>el.classList.remove('selected'));
+  }else{
+    items.forEach(el=>{apImgSelectedSet.add(el.dataset.aidx);el.classList.add('selected');});
+  }
+  updateApImgSelectCount();
+}
+function deleteSelectedApImgs(){
+  if(!apImgSelectedSet.size){showToast('请先选择图片');return;}
+  const album=allAlbums[currentAlbumIdx];
+  if(!album)return;
+  const ui=getUserAlbumIdx();
+  const count=apImgSelectedSet.size;
+  const idxs=[...apImgSelectedSet].map(Number).sort((a,b)=>b-a);
+  // Remove from album's imageSrcs
+  if(ui>=0&&userAlbums[ui]){
+    idxs.forEach(i=>{if(userAlbums[ui].imageSrcs)userAlbums[ui].imageSrcs.splice(i,1);});
+    saveUserAlbums();refreshAlbumData();
+  }
+  exitApImgSelectMode();
+  renderAlbumDetail();renderHomeAlbums();
+  showToast('已从相册移除 '+count+' 张图片');
+}
+function bindApImgEvents(container){
+  container.querySelectorAll('.ap-gimg[data-aidx]').forEach(item=>{
+    item.addEventListener('click',(e)=>{
+      if(apImgSelectMode){e.preventDefault();toggleApImgSelect(item);}
+      else{openLightbox(item.dataset.src);}
+    });
+  });
+}
 function renderApContent(){
   const album=allAlbums[currentAlbumIdx];
   const content=document.getElementById('apContent');
@@ -3837,39 +3946,43 @@ function renderApContent(){
 
   if(apTabIdx===0){
     // ALL - flat grid
-    content.innerHTML='<div class="ap-flat-grid">'+imgs.map(img=>{
+    content.innerHTML='<div class="ap-flat-grid">'+imgs.map((img,i)=>{
       const isFav=favs.includes(img.src);
-      return `<div class="ap-gimg" onclick="openLightbox('${img.src}')">${galleryItemHtml(img)}<button class="ap-fav-star${isFav?' faved':''}" onclick="event.stopPropagation();toggleFav('${img.src}')"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></button></div>`;
+      return `<div class="ap-gimg" data-aidx="${i}" data-src="${img.src}">${galleryItemHtml(img)}<button class="ap-fav-star${isFav?' faved':''}" onclick="event.stopPropagation();toggleFav('${img.src}')"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></button><div class="select-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>`;
     }).join('')+'</div>';
+    bindApImgEvents(content);
   } else if(apTabIdx===1){
     // FAVORITES - flat grid
-    const favImgs=imgs.filter(img=>favs.includes(img.src));
+    const favImgs=imgs.map((img,i)=>({...img,aidx:i})).filter(img=>favs.includes(img.src));
     if(!favImgs.length){content.innerHTML='<div class="ap-content-empty">还没有收藏的图片<br><span style="font-size:11px;color:#ccc;margin-top:6px;display:inline-block">点击图片上的星标收藏</span></div>';return;}
-    content.innerHTML='<div class="ap-flat-grid">'+favImgs.map(img=>`<div class="ap-gimg" onclick="openLightbox('${img.src}')">${galleryItemHtml(img)}<button class="ap-fav-star faved" onclick="event.stopPropagation();toggleFav('${img.src}')"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></button></div>`).join('')+'</div>';
+    content.innerHTML='<div class="ap-flat-grid">'+favImgs.map(img=>`<div class="ap-gimg" data-aidx="${img.aidx}" data-src="${img.src}">${galleryItemHtml(img)}<button class="ap-fav-star faved" onclick="event.stopPropagation();toggleFav('${img.src}')"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></button><div class="select-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>`).join('')+'</div>';
+    bindApImgEvents(content);
   } else if(apTabIdx===2){
     // TIMELINE
     const groups={};
-    imgs.forEach(img=>{const d=img.date||'未知';if(!groups[d])groups[d]=[];groups[d].push(img);});
+    imgs.forEach((img,i)=>{const d=img.date||'未知';if(!groups[d])groups[d]=[];groups[d].push({...img,aidx:i});});
     let html='';
     Object.entries(groups).forEach(([date,dateImgs])=>{
       const art=dateToArt(date);
       html+=`<div class="gp-time-header"><div class="gp-time-en">${art.en}</div><div class="gp-time-cn">${art.sub}${art.cn?' / '+art.cn:''} · ${dateImgs.length} 张</div></div>`;
-      html+=`<div class="ap-flat-grid">${dateImgs.map(img=>`<div class="ap-gimg" onclick="openLightbox('${img.src}')">${galleryItemHtml(img)}</div>`).join('')}</div>`;
+      html+=`<div class="ap-flat-grid">${dateImgs.map(img=>`<div class="ap-gimg" data-aidx="${img.aidx}" data-src="${img.src}">${galleryItemHtml(img)}<div class="select-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>`).join('')}</div>`;
     });
     content.innerHTML=html;
+    bindApImgEvents(content);
   } else if(apTabIdx===3){
-    // CATEGORY - by type, with change-category badge
+    // CATEGORY - by type
     const types={};
-    imgs.forEach(img=>{const ext=(img.name.split('.').pop()||'other').toLowerCase();if(!types[ext])types[ext]=[];types[ext].push(img);});
+    imgs.forEach((img,i)=>{const ext=(img.name.split('.').pop()||'other').toLowerCase();if(!types[ext])types[ext]=[];types[ext].push({...img,aidx:i});});
     let html='';
     const colors=['#e8a87c','#85cdca','#b0a4e3','#87bdd8','#f6c667','#d4756a','#9ab973'];
     let ci=0;
     Object.entries(types).forEach(([ext,typeImgs])=>{
       const clr=colors[ci%colors.length]; ci++;
       html+=`<div class="ap-cat-section"><div class="ap-cat-label"><span class="cat-dot" style="background:${clr}"></span>${ext.toUpperCase()}<span class="cat-cnt">${typeImgs.length} 张</span></div>`;
-      html+=`<div class="ap-flat-grid">${typeImgs.map(img=>`<div class="ap-gimg" onclick="openLightbox('${img.src}')">${galleryItemHtml(img)}<button class="ap-cat-badge" onclick="event.stopPropagation();fcSetCategory('${img.src}')">${ext.toUpperCase()}</button></div>`).join('')}</div></div>`;
+      html+=`<div class="ap-flat-grid">${typeImgs.map(img=>`<div class="ap-gimg" data-aidx="${img.aidx}" data-src="${img.src}">${galleryItemHtml(img)}<button class="ap-cat-badge" onclick="event.stopPropagation();fcSetCategory('${img.src}')">${ext.toUpperCase()}</button><div class="select-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>`).join('')}</div></div>`;
     });
     content.innerHTML=html;
+    bindApImgEvents(content);
   } else if(apTabIdx===4){
     // COPY LINKS - sortable list with format selector
     const sorted=[...imgs].sort((a,b)=>a.name.localeCompare(b.name));
@@ -4162,16 +4275,42 @@ function asClear(){
 function asDelete(){
   const ui=getUserAlbumIdx();
   if(ui<0){showToast('系统相册无法删除');return;}
-  gdShow({title:'删除相册',desc:'确定要删除「'+allAlbums[currentAlbumIdx].name+'」吗？这不会删除原始文件。',
-    confirm:'删除',cancel:'取消',
+  const album=allAlbums[currentAlbumIdx];
+  const imgCount=(album.imageSrcs||[]).length;
+  gdShow({title:'删除相册',desc:'确定要删除「'+album.name+'」吗？'+(imgCount?'\n相册内有 '+imgCount+' 张图片。':''),
+    confirm:'保留图片并删除相册',cancel:'取消',
     onConfirm:()=>{
+      // Keep images — move to uncategorized (remove from this album only)
       userAlbums.splice(ui,1);
       saveUserAlbums();refreshAlbumData();
       apView='list';renderAlbumPage();closeAlbumSettings();
       renderHomeAlbums();
-      showToast('相册已删除');
+      showToast('相册已删除，图片已保留');
     }
   });
+  // Add a secondary "delete all" button after popup shows
+  if(imgCount){
+    setTimeout(()=>{
+      const popup=document.querySelector('#gdOverlay.show .gd-popup');
+      if(!popup)return;
+      const extraBtn=document.createElement('button');
+      extraBtn.textContent='删除相册和所有图片';
+      extraBtn.style.cssText='width:100%;padding:10px;border:none;background:none;color:#c06060;font-size:13px;font-weight:600;cursor:pointer;border-top:1px solid #f0ede9;margin-top:8px';
+      extraBtn.onclick=()=>{
+        // Remove images from allImages
+        const srcs=new Set(album.imageSrcs||[]);
+        if(srcs.size)allImages=allImages.filter(img=>!srcs.has(img.src));
+        saveUserImages();
+        userAlbums.splice(ui,1);
+        saveUserAlbums();refreshAlbumData();
+        apView='list';renderAlbumPage();closeAlbumSettings();
+        renderHomeAlbums();renderHomeGallery();updateHomeStats();
+        document.getElementById('gdOverlay').classList.remove('show');
+        showToast('相册和图片已全部删除');
+      };
+      popup.appendChild(extraBtn);
+    },100);
+  }
 }
 
 function fcSetCategory(src){
