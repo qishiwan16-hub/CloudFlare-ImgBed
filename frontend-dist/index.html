@@ -120,9 +120,9 @@ img{display:block;max-width:100%}
 .modal-close svg{width:20px;height:20px;color:#fff}
 
 /* Result sheet */
-.result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:260;display:none;align-items:center;justify-content:center;padding:24px}
 .result-overlay.show{display:flex}
-.result-sheet{width:100%;max-width:460px;background:#fff;border-radius:22px 22px 0 0;padding:24px 24px 40px;max-height:75vh;overflow-y:auto}
+.result-sheet{width:100%;max-width:460px;background:#fff;border-radius:22px;padding:24px;max-height:80vh;overflow-y:auto}
 .result-sheet-handle{width:36px;height:4px;background:#e0dbd5;border-radius:2px;margin:0 auto 16px}
 .result-header{display:flex;align-items:center;gap:8px;margin-bottom:16px}
 .result-header h3{font-size:17px;font-weight:700;color:#2c2c2c;margin:0}
@@ -146,7 +146,7 @@ img{display:block;max-width:100%}
 .result-link-item .copy-btn.copied{background:#d4e8d4;color:#4a7a4a}
 
 /* Toast */
-.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.75);color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;z-index:300;opacity:0;transition:all .3s;pointer-events:none}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.75);color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;z-index:400;opacity:0;transition:all .3s;pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
 #fileInput{display:none}
@@ -232,9 +232,9 @@ img{display:block;max-width:100%}
 .gp-album-new span{font-size:11px;color:#b0a89f}
 
 /* Settings */
-.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:260;display:none;align-items:center;justify-content:center;padding:24px}
 .settings-overlay.show{display:flex}
-.settings-sheet{width:100%;max-width:460px;background:#fff;border-radius:22px 22px 0 0;padding:24px 24px 40px;max-height:80vh;overflow-y:auto}
+.settings-sheet{width:100%;max-width:460px;background:#fff;border-radius:22px;padding:24px;max-height:80vh;overflow-y:auto}
 .settings-sheet-handle{width:36px;height:4px;background:#e0dbd5;border-radius:2px;margin:0 auto 20px}
 .settings-sheet h3{font-size:16px;font-weight:700;color:#2c2c2c;margin-bottom:20px}
 .setting-group{margin-bottom:18px}
@@ -259,7 +259,7 @@ img{display:block;max-width:100%}
 .setting-img-upload{display:none}
 
 /* Quick edit popup */
-.quick-edit-popup{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;display:none;align-items:center;justify-content:center}
+.quick-edit-popup{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:280;display:none;align-items:center;justify-content:center}
 .quick-edit-popup.show{display:flex}
 .quick-edit-box{background:#fff;border-radius:20px;padding:24px;width:calc(100% - 48px);max-width:360px;box-shadow:0 16px 48px rgba(0,0,0,.15)}
 .quick-edit-box h4{font-size:15px;font-weight:700;color:#2c2c2c;margin-bottom:16px;text-align:center}
@@ -376,9 +376,9 @@ img{display:block;max-width:100%}
 .ap-acard.selected .aac-sel{background:#2c2c2c;border-color:#2c2c2c}
 .ap-acard.selected .aac-sel svg{opacity:1}
 /* Album Settings Overlay */
-.album-settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.album-settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:260;display:none;align-items:center;justify-content:center;padding:24px}
 .album-settings-overlay.show{display:flex}
-.album-settings-panel{width:100%;max-width:460px;background:#f8f6f3;border-radius:24px 24px 0 0;padding:20px 24px env(safe-area-inset-bottom,20px);max-height:80vh;overflow-y:auto;animation:slideUp .3s ease}
+.album-settings-panel{width:100%;max-width:460px;background:#f8f6f3;border-radius:24px;padding:20px 24px;max-height:80vh;overflow-y:auto;animation:gdPop .3s ease}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .as-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .as-title{font-size:18px;font-weight:700;color:#1a1a1a}
@@ -396,8 +396,9 @@ img{display:block;max-width:100%}
 /* Album privacy badge */
 .album-vis-badge{position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);font-size:9px;color:#fff;display:flex;align-items:center;gap:3px;z-index:2}
 .album-vis-badge svg{width:10px;height:10px}
+.fc-container.flipped .fc-copy-panel{transform:rotateY(180deg)}
 /* Image Cropper - Modal */
-.crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:300;display:none;align-items:center;justify-content:center}
+.crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:350;display:none;align-items:center;justify-content:center}
 .crop-overlay.show{display:flex}
 .crop-panel{width:92%;max-width:420px;max-height:85vh;background:#1a1a1a;border-radius:20px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .crop-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -432,7 +433,7 @@ img{display:block;max-width:100%}
 .ap-item-actions button svg{width:16px;height:16px}
 
 /* ===== Flip Card Overlay ===== */
-.fc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
+.fc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
 .fc-overlay.show{display:flex;opacity:1}
 .fc-container{width:300px;aspect-ratio:3/4;perspective:1200px;position:relative}
 .fc-inner{position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d}
@@ -482,18 +483,18 @@ img{display:block;max-width:100%}
 .fc-bk-item.danger .bki-icon{background:#fdf5f5}
 .fc-bk-item.danger .bki-icon svg{color:#d4756a}
 .fc-bk-item.danger .bki-label{color:#c0635a}
-.fc-nav{position:fixed;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 10px;pointer-events:none;z-index:101}
+.fc-nav{position:fixed;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 10px;pointer-events:none;z-index:201}
 .fc-arrow{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;transition:all .2s;opacity:.7}
 .fc-arrow:active{transform:scale(.88);opacity:1}
 .fc-arrow svg{width:18px;height:18px;color:#fff}
-.fc-close{position:fixed;top:24px;right:24px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.1);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:102;transition:all .2s}
+.fc-close{position:fixed;top:24px;right:24px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.1);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:202;transition:all .2s}
 .fc-overlay.show .fc-close{display:flex}
 .fc-close:active{transform:scale(.9)}
 .fc-close svg{width:18px;height:18px;color:#fff}
 @keyframes fcCardIn{from{opacity:0;transform:scale(.85) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .fc-overlay.show .fc-container{animation:fcCardIn .4s cubic-bezier(.32,.72,.24,1)}
 /* Card Lightbox */
-.clb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
+.clb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:260;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
 .clb-overlay.show{display:flex;opacity:1}
 .clb-card{width:90%;max-width:400px;max-height:85vh;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.25);display:flex;flex-direction:column;animation:clbIn .35s cubic-bezier(.32,.72,.24,1)}
 @keyframes clbIn{from{opacity:0;transform:scale(.88) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
@@ -508,7 +509,7 @@ img{display:block;max-width:100%}
 .clb-meta{font-size:11px;color:#b0a89f}
 
 /* ===== Create Album Dialog ===== */
-.album-dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:150;display:none;align-items:center;justify-content:center}
+.album-dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:280;display:none;align-items:center;justify-content:center}
 .album-dialog-overlay.show{display:flex}
 .album-dialog{background:#fff;border-radius:22px;padding:28px 24px;width:calc(100% - 48px);max-width:360px;box-shadow:0 16px 48px rgba(0,0,0,.15);animation:clbIn .3s ease}
 .album-dialog h4{font-size:16px;font-weight:700;color:#2c2c2c;margin-bottom:20px;text-align:center}
@@ -541,7 +542,7 @@ body.dark .theme-opt{background:#2a2826;border-color:#3a3632;color:#aaa}
 body.dark .theme-opt.active{background:#e8e4df;border-color:#e8e4df;color:#222}
 
 /* ===== Generic Dialog (rename/confirm/edit/picker) ===== */
-.gd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:160;display:none;align-items:center;justify-content:center}
+.gd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:none;align-items:center;justify-content:center}
 .gd-overlay.show{display:flex}
 .gd-box{background:#fff;border-radius:22px;padding:28px 24px;width:calc(100% - 48px);max-width:360px;box-shadow:0 16px 48px rgba(0,0,0,.15);animation:clbIn .3s ease}
 .gd-box h4{font-size:16px;font-weight:700;color:#2c2c2c;margin-bottom:16px;text-align:center}
@@ -582,7 +583,7 @@ body.dark .upload-area:hover{background:#302e2a;border-color:#4a4640}
 .tool-entry:active{background:#f0ede8;transform:scale(.98)}
 body.dark .tool-entry{background:#2a2826;color:#aaa}
 /* Image Compressor */
-.comp-overlay{position:fixed;inset:0;background:#f8f6f3;z-index:190;display:none;flex-direction:column;overflow-y:auto}
+.comp-overlay{position:fixed;inset:0;background:#f8f6f3;z-index:240;display:none;flex-direction:column;overflow-y:auto}
 .comp-overlay.show{display:flex}
 body.dark .comp-overlay{background:#1a1a1a}
 .comp-panel{max-width:460px;width:100%;margin:0 auto;padding:0 16px}
@@ -738,7 +739,7 @@ body.dark .stat-label{color:#6a6260}
 body.dark .profile-label{color:#6a6260}
 body.dark .toast{background:rgba(255,255,255,.85);color:#222}
 /* AUTH SYSTEM */
-.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:300;display:none;align-items:center;justify-content:center;padding:24px}
 .auth-overlay.show{display:flex}
 .auth-card{background:#fff;border-radius:22px;width:100%;max-width:380px;padding:32px 0 28px;box-shadow:0 20px 60px rgba(0,0,0,.18);position:relative;animation:gdPop .3s;overflow:hidden}
 .auth-card::before,.auth-card::after{content:'';position:absolute;width:22px;height:22px;background:rgba(0,0,0,.45);border-radius:50%;top:50%;transform:translateY(-50%)}
@@ -829,7 +830,7 @@ body.dark .uc-expand:hover{background:#2a2a2a}
 .nav-dd-item svg{width:16px;height:16px;flex-shrink:0}
 .nav-dd-divider{height:1px;background:#f0f0f0;margin:4px 0}
 /* Admin panel */
-.admin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
+.admin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:300;display:none;align-items:center;justify-content:center;padding:24px}
 .admin-overlay.show{display:flex}
 .admin-card{background:#fff;border-radius:22px;width:100%;max-width:440px;max-height:80vh;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.18);animation:gdPop .3s;overflow-y:auto}
 .admin-title{font-size:18px;font-weight:800;color:#1a1a1a;margin-bottom:4px}
@@ -848,7 +849,7 @@ body.dark .uc-expand:hover{background:#2a2a2a}
 .admin-btn.delete{background:#fde8e8;color:#c53030}
 .admin-btn:active{transform:scale(.95)}
 /* Change password */
-.chpw-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
+.chpw-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:300;display:none;align-items:center;justify-content:center;padding:24px}
 .chpw-overlay.show{display:flex}
 .chpw-card{background:#fff;border-radius:22px;width:100%;max-width:360px;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18);animation:gdPop .3s}
 .chpw-card h4{font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:16px}
@@ -872,7 +873,7 @@ body.dark .admin-user-card{background:#2a2a2a}
 body.dark .admin-user-name{color:#e8e4df}
 body.dark .auth-checkbox{border-color:#555}
 /* ===== Profile Page ===== */
-.profile-page{position:fixed;inset:0;background:#f8f6f3;z-index:190;display:none;flex-direction:column;overflow-y:auto}
+.profile-page{position:fixed;inset:0;background:#f8f6f3;z-index:240;display:none;flex-direction:column;overflow-y:auto}
 .profile-page.show{display:flex}
 .pp-cover{position:relative;width:100%;height:220px;overflow:hidden;flex-shrink:0}
 .pp-cover img{width:100%;height:100%;object-fit:cover}
@@ -916,7 +917,7 @@ body.dark .pp-divider{background:#333}
 body.dark .pp-avatar-wrap{border-color:#1a1a1a;background:#1a1a1a}
 
 /* UPLOAD PAGE - Full page overlay */
-.upload-page-overlay{position:fixed;inset:0;background:#fff;z-index:200;display:none;flex-direction:column;overflow:hidden}
+.upload-page-overlay{position:fixed;inset:0;background:#fff;z-index:250;display:none;flex-direction:column;overflow:hidden}
 .upload-page-overlay.show{display:flex}
 body.dark .upload-page-overlay{background:#1a1a1a}
 .upload-page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-shrink:0;border-bottom:1px solid #f0ede8}
@@ -958,7 +959,7 @@ body.dark .upload-page-btn{background:#e8e4df;color:#1a1a1a}
 body.dark .upload-page-pick{background:#2a2826;border-color:#3a3632}
 
 /* COPY FORMAT SELECTOR - sub-panel in card detail */
-.fc-copy-panel{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border-radius:24px;overflow-y:auto;padding:20px}
+.fc-copy-panel{position:absolute;inset:0;background:#fff;z-index:5;display:none;flex-direction:column;border-radius:24px;overflow-y:auto;padding:20px;backface-visibility:visible;-webkit-backface-visibility:visible}
 .fc-copy-panel.show{display:flex}
 body.dark .fc-copy-panel{background:#252525}
 .fc-copy-panel-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:#2c2c2c}
@@ -2263,7 +2264,7 @@ function openCropper(src,opts){
     cropScale=1;cropX=0;cropY=0;cropRot=0;
     document.getElementById('cropTitle').textContent=opts.title||'裁剪图片';
     const img=new Image();img.crossOrigin='anonymous';
-    img.onload=()=>{cropImg=img;drawCrop();document.getElementById('cropOverlay').classList.add('show');initCropTouch();};
+    img.onload=()=>{cropImg=img;document.getElementById('cropOverlay').classList.add('show');initCropTouch();requestAnimationFrame(()=>requestAnimationFrame(()=>drawCrop()));};
     img.onerror=()=>{showToast('图片加载失败');resolve(null);};
     img.src=src;
   });
@@ -2402,16 +2403,19 @@ function initCropTouch(){
   wrap.addEventListener('wheel',e=>{e.preventDefault();cropZoom(e.deltaY>0?-0.05:0.05);},{passive:false});
 }
 
+let _pickerBusy=false;
 function initImagePicker(pickerId,inputId,previewId,hiddenId){
   const picker=document.getElementById(pickerId),input=document.getElementById(inputId);
   const preview=document.getElementById(previewId),hidden=document.getElementById(hiddenId);
   const isAvatar=pickerId.includes('avatar')||pickerId.includes('Avatar');
-  picker.addEventListener('click',()=>input.click());
+  picker.addEventListener('click',()=>{if(_pickerBusy){showToast('请等待当前上传完成');return;}input.click();});
   input.addEventListener('change',async(e)=>{
     const file=e.target.files[0]; if(!file)return;
+    if(_pickerBusy){showToast('请等待当前上传完成');input.value='';return;}
+    _pickerBusy=true;
     const localUrl=URL.createObjectURL(file);
     const cropped=await openCropper(localUrl,{aspect:isAvatar?1:16/9,shape:isAvatar?'circle':'rect',title:isAvatar?'裁剪头像':'裁剪封面'});
-    if(!cropped){input.value='';return;}
+    if(!cropped){input.value='';_pickerBusy=false;return;}
     const croppedUrl=URL.createObjectURL(cropped);
     preview.src=croppedUrl; picker.classList.remove('empty');
     showToast('上传中...');
@@ -2419,7 +2423,7 @@ function initImagePicker(pickerId,inputId,previewId,hiddenId){
       if(resp.ok){const data=await resp.json();if(data&&data[0]){const u=location.origin+data[0].src;hidden.value=u;preview.src=u;showToast('图片已上传');}}
       else throw new Error('fail');
     }catch(err){showToast('上传失败');hidden.value=croppedUrl;}
-    input.value='';
+    input.value='';_pickerBusy=false;
   });
 }
 function updatePickerPreview(pickerId,previewId,src){
@@ -2854,8 +2858,10 @@ function saveUserAlbums(){ localStorage.setItem(userKey('imgbed_albums'), JSON.s
 function renderHomeAlbums(){
   loadUserAlbums();
   const scroll=document.getElementById('albumsScroll');
-  // Built-in + user albums
-  const builtIn=[{name:'全部',count:allImages.length,cover:allImages[0]?.src},{name:'最近上传',count:Math.min(allImages.length,3),cover:allImages[1]?.src}];
+  // 未分类: images not in any user album
+  const _catIdxs=new Set(); userAlbums.forEach(a=>(a.imageIdxs||[]).forEach(i=>_catIdxs.add(i)));
+  const _uncatImgs=allImages.filter((_,i)=>!_catIdxs.has(i));
+  const builtIn=[{name:'未分类',count:_uncatImgs.length,cover:_uncatImgs[0]?.src}];
   const allHomeAlbums=[...builtIn,...userAlbums.map(a=>({name:a.name,count:(a.imageIdxs||[]).length,cover:a.imageIdxs&&a.imageIdxs.length?allImages[a.imageIdxs[0]]?.src:null,color:a.color,visibility:a.visibility||'public'}))]; 
   let html=allHomeAlbums.map((a,i)=>`<div class="album-card" onclick="homeAlbumClick(${i})" style="${a.color?'border-bottom:3px solid '+a.color:''}"><div class="ac-thumb" style="position:relative">${a.cover?`<img src="${a.cover}" loading="lazy">`:'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>'}${a.visibility==='private'?'<div class="album-vis-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>私密</div>':''}</div><div class="ac-info"><div class="ac-name">${a.name}</div><div class="ac-cnt">${a.count} 张照片</div></div></div>`).join('');
   scroll.innerHTML=html;
@@ -3067,15 +3073,15 @@ function initAlbumPage(){
 
 function refreshAlbumData(){
   loadUserAlbums();
-  const today=allImages.filter(i=>i.date==='\u4eca\u5929');
-  const yesterday=allImages.filter(i=>i.date==='\u6628\u5929');
+  // 未分类: images not in any user album
+  const _catSet=new Set(); userAlbums.forEach(a=>(a.imageIdxs||[]).forEach(i=>_catSet.add(i)));
+  const uncatImgs=allImages.filter((_,i)=>!_catSet.has(i));
   allAlbums=[
-    {name:'\u5168\u90e8',images:[...allImages],cover:allImages[0]?.src},
-    {name:'\u6700\u8fd1\u4e0a\u4f20',images:today.length?today:allImages.slice(0,3),cover:(today[0]||allImages[0])?.src},
+    {name:'未分类',images:uncatImgs,cover:uncatImgs[0]?.src},
   ];
   userAlbums.forEach(a=>{
     const imgs=(a.imageIdxs||[]).map(i=>allImages[i]).filter(Boolean);
-    allAlbums.push({name:a.name,images:imgs,cover:imgs[0]?.src,color:a.color,category:a.category||'',visibility:a.visibility||'public'});
+    allAlbums.push({name:a.name,images:imgs,cover:imgs[0]?.src||a.coverSrc,color:a.color,category:a.category||'',visibility:a.visibility||'public'});
   });
   const types={};
   allImages.forEach(img=>{const ext=(img.name.split('.').pop()||'other').toLowerCase();if(!types[ext])types[ext]=[];types[ext].push(img);});
@@ -3172,8 +3178,8 @@ function selectAllAlbums(){
 function deleteSelectedAlbums(){
   if(!albumSelectedSet.size){showToast('请先选择相册');return;}
   const count=albumSelectedSet.size;
-  // userAlbums index = allAlbums index - 2 (skip "全部" and "最近上传")
-  const toDelete=[...albumSelectedSet].map(ri=>ri-2).filter(i=>i>=0).sort((a,b)=>b-a);
+  // userAlbums index = allAlbums index - 1 (skip "未分类")
+  const toDelete=[...albumSelectedSet].map(ri=>ri-1).filter(i=>i>=0).sort((a,b)=>b-a);
   toDelete.forEach(i=>{if(i<userAlbums.length)userAlbums.splice(i,1);});
   saveUserAlbums();
   exitAlbumSelectMode();
@@ -3190,8 +3196,15 @@ function albumCardTouchStart(e,ri){
   albumLpTimer=setTimeout(()=>{
     if(!albumLpMoved){
       e.preventDefault();
-      if(!albumSelectMode)enterAlbumSelectMode();
-      toggleAlbumSelect(ri);
+      // Long-press: open album settings for user albums, select mode for system
+      const ui=ri-1;
+      if(ui>=0&&ui<userAlbums.length){
+        currentAlbumIdx=ri;
+        openAlbumSettings();
+      }else{
+        if(!albumSelectMode)enterAlbumSelectMode();
+        toggleAlbumSelect(ri);
+      }
     }
   },500);
 }
@@ -3203,10 +3216,8 @@ function apOpenDetail(idx){
   const album=allAlbums[idx];
   if(album&&album.visibility==='private'){
     const user=authCurrentUser();
-    // Only the current logged-in user who owns the album can access
     if(!user){showToast('请先登录后查看私密相册');return;}
-    // Check if this album belongs to the current user's userAlbums
-    const ui=idx-2;
+    const ui=idx-1;
     if(ui<0||ui>=userAlbums.length){showToast('无权访问此相册');return;}
   }
   currentAlbumIdx=idx; apView='detail'; apTabIdx=0;
@@ -3467,8 +3478,8 @@ function asToggleVisibility(){
 }
 
 function getUserAlbumIdx(){
-  // userAlbums index = currentAlbumIdx - 2 (skip "全部" and "最近上传")
-  return currentAlbumIdx - 2;
+  // userAlbums index = currentAlbumIdx - 1 (skip "未分类")
+  return currentAlbumIdx - 1;
 }
 
 function asRename(){
@@ -3486,7 +3497,7 @@ function asChangeCover(){
   if(!album.images.length){showToast('相册没有图片');return;}
   closeAlbumSettings();
   gdShow({title:'选择封面',desc:'点击选择一张图片作为封面',albumPicker:true,
-    albums:album.images.map(img=>({name:img.name,cover:img.src,count:0,selected:img.src===album.cover})),
+    albums:album.images.map(img=>({name:img.name,cover:img.src,color:'#ccc',count:0,selected:img.src===album.cover})),
     confirm:'确定',cancel:'取消',
     onConfirm:(_,__,selectedIdxs)=>{
       if(selectedIdxs.length>0){
@@ -3832,7 +3843,7 @@ function gdShow(opts){
   const aList=document.getElementById('gdAlbumList');
   if(opts.albumPicker&&opts.albums){
     aList.style.display='';
-    aList.innerHTML=opts.albums.map((a,i)=>`<button class="gd-album-item${a.selected?' selected':''}" data-idx="${i}" onclick="gdToggleAlbum(this)"><div class="gda-dot" style="background:${a.color||'#ccc'}"></div><div class="gda-name">${a.name}</div><div class="gda-cnt">${a.count} 张</div><div class="gda-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></button>`).join('');
+    aList.innerHTML=opts.albums.map((a,i)=>`<button class="gd-album-item${a.selected?' selected':''}" data-idx="${i}" onclick="gdToggleAlbum(this)">${a.cover?`<img src="${a.cover}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0">`:`<div class="gda-dot" style="background:${a.color||'#ccc'}"></div>`}<div class="gda-name">${a.name}</div><div class="gda-cnt">${a.count} 张</div><div class="gda-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div></button>`).join('');
   }else{aList.style.display='none';aList.innerHTML='';}
   const acts=document.getElementById('gdActions');
   const ccls=opts.confirmClass||'gd-confirm';
