@@ -3009,8 +3009,8 @@ async function uploadPageStart(){
           uploadPageResults[i]='done';
           if(data&&data[0]){
             const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;
-            results.push({name:file.name,src,fullUrl,aliases:al});
-            allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0,aliases:al});
+            results.push({name:cleanFileName(file.name),src,fullUrl,aliases:al});
+            allImages.unshift({src:fullUrl,name:cleanFileName(file.name),date:new Date().toLocaleDateString('zh-CN'),size:file.size||0,aliases:al});
           }
         }else throw new Error('HTTP '+resp.status);
       }catch(err){
@@ -3130,6 +3130,7 @@ function galleryItemHtml(img){
   return `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f5f3f0;position:relative">${fileTypeIcon(img.name)}<div style="position:absolute;bottom:4px;left:4px;right:4px;font-size:9px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center">${img.name.split('.').pop().toUpperCase()}</div></div>`;
 }
 
+function cleanFileName(n){return (n||'').replace(/^\d{13,}_/,'');}
 function isImageFile(name,type){
   if(type&&type.startsWith('image/'))return true;
   const ext=(name||'').split('.').pop().toLowerCase();
@@ -3170,14 +3171,14 @@ async function handleFiles(files){
     const isVid=isVideoFile(file.name,file.type);
     let thumbHtml='';
     if(isImg){thumbHtml=`<img src="${URL.createObjectURL(file)}">`;}else if(isVid){thumbHtml=`<video src="${URL.createObjectURL(file)}" muted style="width:100%;height:100%;object-fit:cover"></video>`;}else{thumbHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f3f0">${fileTypeIcon(file.name,file.type)}</div>`;}
-    item.innerHTML=`<div class="upload-item-thumb">${thumbHtml}</div><div class="upload-item-info"><div class="upload-item-name">${file.name}</div><div class="upload-item-status">上传中...</div><div class="upload-item-bar"><div class="upload-item-bar-fill"></div></div></div>`;
+    item.innerHTML=`<div class="upload-item-thumb">${thumbHtml}</div><div class="upload-item-info"><div class="upload-item-name">${cleanFileName(file.name)}</div><div class="upload-item-status">上传中...</div><div class="upload-item-bar"><div class="upload-item-bar-fill"></div></div></div>`;
     pw.appendChild(item);
     const bar=item.querySelector('.upload-item-bar-fill'),st=item.querySelector('.upload-item-status');
     try{
       bar.style.width='30%';const fd=new FormData();fd.append('file',file);bar.style.width='60%';
       const resp=await fetch(API.upload,{method:'POST',body:fd});bar.style.width='90%';
       if(resp.ok){const data=await resp.json();bar.style.width='100%';st.textContent='上传成功';st.style.color='#6a9a6a';
-        if(data&&data[0]){const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;results.push({name:file.name,src,fullUrl,aliases:al});allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0,aliases:al});}
+        if(data&&data[0]){const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;results.push({name:cleanFileName(file.name),src,fullUrl,aliases:al});allImages.unshift({src:fullUrl,name:cleanFileName(file.name),date:new Date().toLocaleDateString('zh-CN'),size:file.size||0,aliases:al});}
       }else throw new Error('HTTP '+resp.status);
     }catch(err){bar.style.width='100%';bar.style.background='#e8a0a0';st.textContent='失败: '+err.message;st.style.color='#c06060';}
   }
@@ -4415,10 +4416,10 @@ function fcUpdate(){
     fcImgEl.style.display='';fcImgEl.src=img.src;
     document.getElementById('fcBackThumb').src=img.src;
   }
-  document.getElementById('fcName').textContent=img.name||'image';
+  document.getElementById('fcName').textContent=cleanFileName(img.name||'image');
   // fcLink removed — direct URL hidden from front card
   document.getElementById('fcBackThumb').src=img.src;
-  document.getElementById('fcBackName').textContent=img.name||'image';
+  document.getElementById('fcBackName').textContent=cleanFileName(img.name||'image');
   document.getElementById('fcBackMeta').textContent=(img.date||'');
   // Aliases info — always show, fallback to current URL for old images
   const aliasBox=document.getElementById('fcBackAliases');
