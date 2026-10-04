@@ -266,7 +266,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','P
       <div class="acc-body">
         <div style="padding:0 0 10px;display:flex;align-items:center;justify-content:space-between">
           <span style="font-size:12px;color:var(--sub)">默认储存限额</span>
-          <div style="display:flex;align-items:center;gap:6px"><input class="settings-input" id="defaultStorageLimit" type="number" value="5" min="1" style="width:60px;text-align:right;padding:5px 8px;font-size:13px"><span style="font-size:12px;color:var(--sub)">GB</span><button class="settings-btn primary small" onclick="saveDefaultStorage()">保存</button></div>
+          <div style="display:flex;align-items:center;gap:6px"><input class="settings-input" id="defaultStorageLimit" type="text" value="5 GB" style="width:80px;text-align:right;padding:5px 8px;font-size:13px" placeholder="5GB"><button class="settings-btn primary small" onclick="saveDefaultStorage()">保存</button></div>
         </div>
         <div class="acc-list" id="accountList"><div class="empty-state">点击展开加载...</div></div>
         <div class="acc-desc">管理用户储存空间。超过限额时用户将无法上传。</div>
@@ -704,32 +704,60 @@ function saveStorageLimits(limits){localStorage.setItem(STORAGE_LIMITS_KEY,JSON.
 function getDefaultStorageLimit(){
   try{return parseFloat(localStorage.getItem('imgbed_default_storage_gb'))||DEFAULT_STORAGE_GB;}catch{return DEFAULT_STORAGE_GB;}
 }
+function parseStorageInput(str){
+  str=String(str).trim().toUpperCase();
+  const m=str.match(/^([\d.]+)\s*(KB|MB|GB|TB|K|M|G|T)?$/);
+  if(!m)return null;
+  const num=parseFloat(m[1]);
+  if(isNaN(num)||num<=0)return null;
+  const unit=(m[2]||'GB').replace(/^(K|M|G|T)$/,'$1B');
+  switch(unit){
+    case 'KB':return num/(1024*1024);
+    case 'MB':return num/1024;
+    case 'TB':return num*1024;
+    default:return num; // GB
+  }
+}
+function formatStorageGB(gb){
+  if(gb>=1)return gb%1===0?gb+' GB':gb.toFixed(1)+' GB';
+  const mb=gb*1024;
+  if(mb>=1)return mb.toFixed(0)+' MB';
+  return (mb*1024).toFixed(0)+' KB';
+}
+function formatBytes(b){
+  if(b<1024)return b+' B';
+  if(b<1024*1024)return (b/1024).toFixed(1)+' KB';
+  if(b<1024*1024*1024)return (b/(1024*1024)).toFixed(1)+' MB';
+  return (b/(1024*1024*1024)).toFixed(2)+' GB';
+}
 function saveDefaultStorage(){
-  const val=parseFloat($('defaultStorageLimit').value)||DEFAULT_STORAGE_GB;
-  localStorage.setItem('imgbed_default_storage_gb',String(val));
-  showToast('默认限额已设为 '+val+' GB');
+  const raw=$('defaultStorageLimit').value;
+  const gb=parseStorageInput(raw);
+  if(!gb){showToast('格式错误，示例: 5GB, 500MB, 2.5G');return;}
+  localStorage.setItem('imgbed_default_storage_gb',String(gb));
+  $('defaultStorageLimit').value=formatStorageGB(gb);
+  showToast('默认限额已设为 '+formatStorageGB(gb));
 }
 function loadAccounts(){
   const users=loadAuthUsers();
   const limits=getStorageLimits();
   const defaultGB=getDefaultStorageLimit();
-  $('defaultStorageLimit').value=defaultGB;
+  $('defaultStorageLimit').value=formatStorageGB(defaultGB);
   const el=$('accountList');
   if(!users.length){el.innerHTML='<div class="empty-state">暂无用户</div>';return;}
   el.innerHTML=users.filter(u=>u.status==='approved').map(u=>{
     const limitGB=limits[u.username]||defaultGB;
     const usedKey='imgbed_images_'+u.username;
-    let usedMB=0;
-    try{const imgs=JSON.parse(localStorage.getItem(usedKey)||'[]');usedMB=(imgs.length*0.5).toFixed(1);}catch{} // rough estimate
-    const pct=Math.min(100,(usedMB/(limitGB*1024)*100)).toFixed(0);
+    let usedBytes=0;
+    try{const imgs=JSON.parse(localStorage.getItem(usedKey)||'[]');usedBytes=imgs.reduce((s,i)=>s+(i.size||0),0);}catch{}
+    const pct=Math.min(100,(usedBytes/(limitGB*1024*1024*1024)*100)).toFixed(0);
     const barColor=pct>90?'var(--danger)':pct>70?'#d4a017':'var(--success)';
     return `<div class="tool-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div><div class="tool-item-name">${esc(u.username)}${u.role==='admin'?' <span style="font-size:10px;color:var(--sub)">(管理员)</span>':''}</div>
-        <div class="tool-item-sub">已用 ~${usedMB} MB / ${limitGB} GB</div></div>
+        <div class="tool-item-sub">已用 ${formatBytes(usedBytes)} / ${formatStorageGB(limitGB)}</div></div>
         <div style="display:flex;align-items:center;gap:4px">
-          <input type="number" class="settings-input" id="storageInput_${esc(u.username)}" value="${limitGB}" min="0.1" step="0.5" style="width:55px;padding:4px 6px;font-size:12px;text-align:right">
-          <span style="font-size:11px;color:var(--sub)">GB</span>
+          <input type="text" class="settings-input" id="storageInput_${esc(u.username)}" value="${formatStorageGB(limitGB)}" style="width:75px;padding:4px 6px;font-size:12px;text-align:right">
           <button class="settings-btn primary small" style="padding:4px 10px;font-size:11px;margin-left:2px" onclick="setUserStorage('${esc(u.username)}',document.getElementById('storageInput_${esc(u.username)}').value)">保存</button>
         </div>
       </div>
@@ -738,10 +766,14 @@ function loadAccounts(){
   }).join('');
 }
 function setUserStorage(username,val){
+  const gb=parseStorageInput(val);
+  if(!gb){showToast('格式错误，示例: 5GB, 500MB');return;}
   const limits=getStorageLimits();
-  limits[username]=parseFloat(val)||getDefaultStorageLimit();
+  limits[username]=gb;
   saveStorageLimits(limits);
-  showToast(username+' 限额已设为 '+limits[username]+' GB');
+  const inp=document.getElementById('storageInput_'+username);
+  if(inp)inp.value=formatStorageGB(gb);
+  showToast(username+' 限额已设为 '+formatStorageGB(gb));
 }
 
 /* ============ UTILS ============ */
