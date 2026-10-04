@@ -502,30 +502,8 @@ async function uploadFileToTelegram(context, fullId, metadata, fileExt, fileName
     }
 
     // 选择对应的发送接口
-    const fileTypeMap = {
-        'image/': { 'url': 'sendPhoto', 'type': 'photo' },
-        'video/': { 'url': 'sendVideo', 'type': 'video' },
-        'audio/': { 'url': 'sendAudio', 'type': 'audio' },
-        'application/pdf': { 'url': 'sendDocument', 'type': 'document' },
-    };
-
-    const defaultType = { 'url': 'sendDocument', 'type': 'document' };
-
-    let sendFunction = Object.keys(fileTypeMap).find(key => fileType.startsWith(key))
-        ? fileTypeMap[Object.keys(fileTypeMap).find(key => fileType.startsWith(key))]
-        : defaultType;
-
-    // GIF ICO 等发送接口特殊处理
-    if (fileType === 'image/gif' || fileType === 'image/webp' || fileExt === 'gif' || fileExt === 'webp') {
-        sendFunction = { 'url': 'sendAnimation', 'type': 'animation' };
-    } else if (fileType === 'image/svg+xml' || fileType === 'image/x-icon') {
-        sendFunction = { 'url': 'sendDocument', 'type': 'document' };
-    }
-
-    // 根据服务端压缩设置处理接口：从参数中获取serverCompress，如果为false，则使用sendDocument接口
-    if (url.searchParams.get('serverCompress') === 'false') {
-        sendFunction = { 'url': 'sendDocument', 'type': 'document' };
-    }
+    // 始终使用 sendDocument 避免 Telegram 压缩图片画质
+    let sendFunction = { 'url': 'sendDocument', 'type': 'document' };
 
     // 上传文件到 Telegram
     let res = createResponse('upload error, check your environment params about telegram channel!', { status: 400 });
