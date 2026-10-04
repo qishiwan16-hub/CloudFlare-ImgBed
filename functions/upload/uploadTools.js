@@ -494,6 +494,33 @@ export async function buildUniqueFileId(context, fileName, fileType = 'applicati
     throw new Error('无法生成唯一的文件ID');
 }
 
+// 为文件创建时间戳和短链别名
+export async function createFileAliases(context, primaryId, fileName, fileExt) {
+    const { env } = context;
+    const db = getDatabase(env);
+    const timestamp = Date.now() + Math.floor(Math.random() * 10000);
+    
+    // 时间戳别名
+    const tsId = `${timestamp}.${fileExt}`;
+    // 短链别名
+    let shortId = '';
+    for (let i = 0; i < 20; i++) {
+        const candidate = `${generateShortId(8)}.${fileExt}`;
+        if (await db.get(candidate) === null) {
+            shortId = candidate;
+            break;
+        }
+    }
+    if (!shortId) shortId = `${generateShortId(12)}.${fileExt}`;
+    
+    // 存储别名 → 指向主文件ID
+    const aliasMetadata = { isAlias: true, target: primaryId };
+    await db.put(tsId, '', { metadata: aliasMetadata });
+    await db.put(shortId, '', { metadata: aliasMetadata });
+    
+    return { tsId, shortId };
+}
+
 // 基于uploadId的一致性渠道选择
 export function selectConsistentChannel(channels, uploadId, loadBalanceEnabled) {
     if (!loadBalanceEnabled || !channels || channels.length === 0) {

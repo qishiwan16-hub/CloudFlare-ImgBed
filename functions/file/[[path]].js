@@ -71,9 +71,19 @@ export async function onRequest(context) {  // Contents of context object
 
     // 从数据库中获取图片记录
     const db = getDatabase(env);
-    const imgRecord = await db.getWithMetadata(fileId);
+    let imgRecord = await db.getWithMetadata(fileId);
     if (!imgRecord) {
         return new Response('Error: Image Not Found', { status: 404 });
+    }
+
+    // 别名解析：如果是别名记录，跳转到主文件
+    if (imgRecord.metadata?.isAlias && imgRecord.metadata?.target) {
+        const targetId = imgRecord.metadata.target;
+        imgRecord = await db.getWithMetadata(targetId);
+        if (!imgRecord) {
+            return new Response('Error: Image Not Found (alias target missing)', { status: 404 });
+        }
+        fileId = targetId;
     }
 
     // 如果metadata不存在，只可能是之前未设置KV，且存储在Telegraph上的图片

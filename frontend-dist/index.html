@@ -708,6 +708,8 @@ body.dark .fc-copy-btn{background:#333;color:#aaa}
 body.dark .fc-flip-btn{background:#e8e4df;color:#222}
 body.dark .fc-bk-flip{background:#333}
 body.dark .fc-bk-thumb{background:#2a2826}
+body.dark .fc-bk-aliases{background:#2a2826}
+body.dark .fc-bk-aliases span{color:#aaa!important}
 body.dark .fc-bk-item:active{background:#2a2826}
 body.dark .fc-bk-item .bki-icon{background:#2a2826}
 body.dark .fc-bk-item.danger .bki-icon{background:#2d2222}
@@ -1216,6 +1218,11 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
           <img id="fcBackThumb" src="" alt="">
           <div style="flex:1;min-width:0"><div class="fc-bk-tname" id="fcBackName"></div><div class="fc-bk-tmeta" id="fcBackMeta"></div></div>
         </div>
+        <div class="fc-bk-aliases" id="fcBackAliases" style="display:none;padding:6px 12px;margin:-4px 0 4px;border-radius:10px;background:#faf8f6;font-size:11px;line-height:1.8">
+          <div style="display:flex;align-items:center;gap:4px"><span style="color:#999;min-width:48px">文件名</span><span id="fcAliasOriginal" style="color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="color:#999;min-width:48px">时间戳</span><span id="fcAliasTimestamp" style="color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="color:#999;min-width:48px">短链</span><span id="fcAliasShort" style="color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span></div>
+        </div>
         <div class="fc-bk-menu">
           <button class="fc-bk-item" onclick="openCopyPanel()">
             <div class="bki-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
@@ -1252,7 +1259,10 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
         </div>
         <div class="fc-copy-cat">查看器链接</div>
         <div class="fc-copy-opt selected" data-fmt="viewer" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">查看器链接</span><span class="fc-copy-opt-radio"></span></div>
-        <div class="fc-copy-opt" data-fmt="url" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">直链</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-cat">直链</div>
+        <div class="fc-copy-opt" data-fmt="url" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">直链（原始文件名）</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="url_ts" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">直链（时间戳）</span><span class="fc-copy-opt-radio"></span></div>
+        <div class="fc-copy-opt" data-fmt="url_short" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">直链（短链）</span><span class="fc-copy-opt-radio"></span></div>
         <div class="fc-copy-cat">HTML 代码</div>
         <div class="fc-copy-opt" data-fmt="html_img" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">HTML 图片</span><span class="fc-copy-opt-radio"></span></div>
         <div class="fc-copy-opt" data-fmt="html_full" onclick="selectCopyFmt(this)"><span class="fc-copy-opt-name">HTML 原图 (带链接)</span><span class="fc-copy-opt-radio"></span></div>
@@ -2835,7 +2845,7 @@ async function handleFiles(files){
       bar.style.width='30%';const fd=new FormData();fd.append('file',file);bar.style.width='60%';
       const resp=await fetch(API.upload,{method:'POST',body:fd});bar.style.width='90%';
       if(resp.ok){const data=await resp.json();bar.style.width='100%';st.textContent='上传成功';st.style.color='#6a9a6a';
-        if(data&&data[0]){const src=data[0].src,fullUrl=location.origin+src;results.push({name:file.name,src,fullUrl});allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0});}
+        if(data&&data[0]){const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;results.push({name:file.name,src,fullUrl,aliases:al});allImages.unshift({src:fullUrl,name:file.name,date:new Date().toLocaleDateString('zh-CN'),size:file.size||0,aliases:al});}
       }else throw new Error('HTTP '+resp.status);
     }catch(err){bar.style.width='100%';bar.style.background='#e8a0a0';st.textContent='失败: '+err.message;st.style.color='#c06060';}
   }
@@ -2861,22 +2871,42 @@ function showResults(results){
 function updateResultLinks(){
   const fmt=document.getElementById('resultFormat').value;
   const lines=_uploadResults.map(r=>{
+    const url=r.fullUrl;
     switch(fmt){
-      case 'url': return r.fullUrl;
-      case 'markdown': return `![${r.name}](${r.fullUrl})`;
-      case 'html': return `<img src="${r.fullUrl}" alt="${r.name}">`;
-      case 'bbcode': return `[img]${r.fullUrl}[/img]`;
-      default: return r.fullUrl;
+      case 'url': return url;
+      case 'markdown': return `![${r.name}](${url})`;
+      case 'html': return `<img src="${url}" alt="${r.name}">`;
+      case 'bbcode': return `[img]${url}[/img]`;
+      default: return url;
     }
   });
   document.getElementById('resultTextarea').value=lines.join('\n');
-  // Also build per-item links
+  // Build per-item links with aliases
   const el=document.getElementById('resultLinks');el.innerHTML='';
   _uploadResults.forEach((r,i)=>{
     const d=document.createElement('div');d.className='result-link-item';
-    d.innerHTML=`<div style="flex:1;min-width:0"><div class="link-label">${escHtml(r.name)}</div><div class="link-value">${escHtml(lines[i])}</div></div><button class="copy-btn">复制</button>`;
+    let aliasHtml='';
+    if(r.aliases){
+      const origin=location.origin;
+      const fmtAlias=(label,url)=>{
+        let text=url;
+        if(fmt==='markdown')text=`![${r.name}](${url})`;
+        else if(fmt==='html')text=`<img src="${url}" alt="${r.name}">`;
+        else if(fmt==='bbcode')text=`[img]${url}[/img]`;
+        return `<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:10px;color:#999;white-space:nowrap;min-width:50px">${label}</span><div class="link-value" style="flex:1;font-size:11px">${escHtml(text)}</div><button class="copy-btn" style="font-size:10px;padding:2px 8px" data-text="${escHtml(text)}">复制</button></div>`;
+      };
+      const tsUrl=r.aliases.timestamp?.startsWith('/')?origin+r.aliases.timestamp:r.aliases.timestamp;
+      const shortUrl=r.aliases.short?.startsWith('/')?origin+r.aliases.short:r.aliases.short;
+      if(tsUrl)aliasHtml+=fmtAlias('时间戳',tsUrl);
+      if(shortUrl)aliasHtml+=fmtAlias('短链',shortUrl);
+    }
+    d.innerHTML=`<div style="flex:1;min-width:0"><div class="link-label">${escHtml(r.name)}</div><div class="link-value">${escHtml(lines[i])}</div><button class="copy-btn">复制</button>${aliasHtml}</div>`;
     d.querySelector('.copy-btn').addEventListener('click',function(){copyText(this,lines[i]);});
+    d.querySelectorAll('button[data-text]').forEach(btn=>{
+      btn.addEventListener('click',function(){copyText(this,this.dataset.text);});
+    });
     el.appendChild(d);
+  });
   });
 }
 function copyAllResultLinks(){
@@ -3958,6 +3988,16 @@ function fcUpdate(){
   document.getElementById('fcBackThumb').src=img.src;
   document.getElementById('fcBackName').textContent=img.name||'image';
   document.getElementById('fcBackMeta').textContent=(img.date||'');
+  // Aliases info
+  const aliasBox=document.getElementById('fcBackAliases');
+  if(img.aliases){
+    aliasBox.style.display='';
+    const origin=location.origin;
+    const fmtA=a=>a?(a.startsWith('/')?origin+a:a):'-';
+    document.getElementById('fcAliasOriginal').textContent=fmtA(img.aliases.original);
+    document.getElementById('fcAliasTimestamp').textContent=fmtA(img.aliases.timestamp);
+    document.getElementById('fcAliasShort').textContent=fmtA(img.aliases.short);
+  }else{aliasBox.style.display='none';}
   // Dots
   const max=Math.min(fcList.length,9);
   document.getElementById('fcDots').innerHTML=Array.from({length:max},(_,i)=>`<span class="fc-dot${i===fcIdx?' active':''}"></span>`).join('');
@@ -4015,10 +4055,15 @@ function getCopyFmtText(){
   const img=fcList[fcIdx]; if(!img)return '';
   const fullUrl=img.src.startsWith('http')?img.src:location.origin+img.src;
   const name=img.name||'image';
-  const viewerUrl=fullUrl; // same as direct for now
+  const origin=location.origin;
+  const al=img.aliases||{};
+  const tsUrl=al.timestamp?(al.timestamp.startsWith('/')?origin+al.timestamp:al.timestamp):fullUrl;
+  const shortUrl=al.short?(al.short.startsWith('/')?origin+al.short:al.short):fullUrl;
   switch(_selectedCopyFmt){
     case 'viewer': return fullUrl;
     case 'url': return fullUrl;
+    case 'url_ts': return tsUrl;
+    case 'url_short': return shortUrl;
     case 'html_img': return `<img src="${fullUrl}" alt="${name}">`;
     case 'html_full': return `<a href="${fullUrl}"><img src="${fullUrl}" alt="${name}"></a>`;
     case 'html_medium': return `<a href="${fullUrl}"><img src="${fullUrl}" alt="${name}" width="500"></a>`;

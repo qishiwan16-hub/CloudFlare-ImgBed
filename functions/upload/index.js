@@ -3,7 +3,7 @@ import { fetchUploadConfig, fetchSecurityConfig, fetchPageConfig } from "../util
 import {
     createResponse, getUploadIp, getIPAddress, resolveFileExt,
     moderateContent, purgeCDNCache, isBlockedUploadIp, buildUniqueFileId, endUpload, getImageDimensions,
-    sanitizeUploadFolder
+    sanitizeUploadFolder, createFileAliases
 } from "./uploadTools";
 import { initializeChunkedUpload, handleChunkUpload, uploadLargeFileToTelegram, handleCleanupRequest } from "./chunkUpload";
 import { handleChunkMerge } from "./chunkMerge";
@@ -191,6 +191,13 @@ async function processFileUpload(context, formdata = null) {
     // 构建文件ID
     const fullId = await buildUniqueFileId(context, fileName, fileType);
 
+    // 生成时间戳和短链别名
+    const aliases = await createFileAliases(context, fullId, fileName, fileExt);
+    metadata.AliasTimestamp = aliases.tsId;
+    metadata.AliasShort = aliases.shortId;
+    context.fileAliases = aliases;
+    context.fullId = fullId;
+
     // 获得返回链接格式, default为返回/file/id, full为返回完整链接
     const returnFormat = url.searchParams.get('returnFormat') || 'default';
     let returnLink = '';
@@ -276,6 +283,16 @@ function buildUploadResponse(context, returnLink) {
     const result = { src: returnLink };
     if (context.publicUrl) {
         result.publicUrl = context.publicUrl;
+    }
+    // 返回三种链接
+    const aliases = context.fileAliases;
+    if (aliases) {
+        const base = returnLink.substring(0, returnLink.lastIndexOf('/') + 1);
+        result.aliases = {
+            original: returnLink,
+            timestamp: `${base}${aliases.tsId}`,
+            short: `${base}${aliases.shortId}`
+        };
     }
     return createResponse(JSON.stringify([result]), {
         headers: {
