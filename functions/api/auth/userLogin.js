@@ -22,15 +22,21 @@ export async function onRequest(context) {
     // Auto-seed admin if no users exist
     const ADMIN_USER = env.ADMIN_USER || 'shenhanyan';
     const ADMIN_PASS = env.ADMIN_PASS; // hashed password from env, optional
-    if (!users.find(u => u.username === ADMIN_USER)) {
+    const defaultHash = ADMIN_PASS || 'h_1450575459'; // hash of '123456'
+    const existingAdmin = users.find(u => u.username === ADMIN_USER);
+    if (!existingAdmin) {
       users.push({
         username: ADMIN_USER,
-        password: ADMIN_PASS || 'h_-1850370968', // default hash of '123456'
+        password: defaultHash,
         role: 'admin',
         status: 'approved',
         remark: '管理员',
         createdAt: Date.now()
       });
+      await db.put('auth@users', JSON.stringify(users));
+    } else if (existingAdmin.password === 'h_-1850370968') {
+      // Fix wrong hash from previous deploy
+      existingAdmin.password = defaultHash;
       await db.put('auth@users', JSON.stringify(users));
     }
 
