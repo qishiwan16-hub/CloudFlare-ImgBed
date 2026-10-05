@@ -1912,6 +1912,7 @@ function authCheckLogin(){
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
   // Background sync from server (overwrites local if server has data)
+  loadServerConfig();
   _syncPullAll().then(pulled=>{
     if(pulled){
       applyConfig();
@@ -1925,6 +1926,25 @@ function authCheckLogin(){
   return true;
 }
 
+let serverConfig={};
+async function loadServerConfig(){
+  try{
+    const r=await fetch('/api/userConfig',{credentials:'include'});
+    if(r.ok)serverConfig=await r.json();
+  }catch(e){}
+  applyServerConfig();
+}
+function applyServerConfig(){
+  const sc=serverConfig;
+  if(sc.siteTitle)document.title=sc.siteTitle;
+  if(sc.siteIcon){const link=document.querySelector('link[rel="icon"]');if(link)link.href=sc.siteIcon;}
+  if(sc.ownerName)document.getElementById('displayName').textContent=sc.ownerName;
+  if(sc.logoUrl)document.getElementById('avatarImg').src=sc.logoUrl;
+  if(sc.announcement){
+    const el=document.getElementById('announcementBar');
+    if(el){el.innerHTML=sc.announcement;el.style.display='';}
+  }
+}
 function onAuthReady(){
   const user=authCurrentUser();
   if(!user) return;
