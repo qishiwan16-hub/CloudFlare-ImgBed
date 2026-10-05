@@ -34,8 +34,9 @@ export async function onRequest(context) {
         createdAt: Date.now()
       });
       await db.put('auth@users', JSON.stringify(users));
-    } else if (existingAdmin.password === 'h_-1850370968') {
-      // Fix wrong hash from previous deploy
+    } else if (existingAdmin.password !== defaultHash && !env.ADMIN_PASS) {
+      // Force reset admin password to default (123456) if it doesn't match
+      // Remove this block after first successful login
       existingAdmin.password = defaultHash;
       await db.put('auth@users', JSON.stringify(users));
     }

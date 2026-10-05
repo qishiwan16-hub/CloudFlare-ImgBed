@@ -53,6 +53,9 @@ export async function onRequest(context) {
         users[idx].status = 'rejected';
       } else if (action === 'setStorage') {
         users[idx].storageLimit = body.storageLimit || null;
+      } else if (action === 'resetPassword') {
+        // Reset password to hash of '123456'
+        users[idx].password = 'h_1450575459';
       } else {
         return Response.json({ success: false, message: '未知操作' }, { status: 400 });
       }

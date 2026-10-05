@@ -494,11 +494,19 @@ function previewImage(url,name){$('previewImg').src=url;$('previewActions').inne
 function closePreview(){$('previewModal').classList.remove('active');}
 
 /* ============ USER REVIEW (localStorage shared with index.html) ============ */
-function loadAuthUsers(){try{return JSON.parse(localStorage.getItem(AUTH_USERS_KEY)||'[]');}catch{return[];}}
-function saveAuthUsers(u){localStorage.setItem(AUTH_USERS_KEY,JSON.stringify(u));}
-function loadUserReviewBadge(){const users=loadAuthUsers();const pending=users.filter(u=>u.status==='pending');$('pendingBadge').textContent=pending.length;}
-function loadUsers(){
-  const users=loadAuthUsers();
+function loadAuthUsers(){return[];} // deprecated — use server API
+function saveAuthUsers(){} // deprecated
+async function loadUsersFromServer(){
+  try{
+    const r=await fetch('/api/auth/users',{credentials:'include'});
+    if(!r.ok)return[];
+    const d=await r.json();
+    return d.success?d.users:[];
+  }catch{return[];}
+}
+function loadUserReviewBadge(){loadUsersFromServer().then(users=>{$('pendingBadge').textContent=users.filter(u=>u.status==='pending').length;});}
+async function loadUsers(){
+  const users=await loadUsersFromServer();
   const pending=users.filter(u=>u.status==='pending');
   const approved=users.filter(u=>u.status==='approved');
   $('pendingBadge').textContent=pending.length;
@@ -507,14 +515,17 @@ function loadUsers(){
   else pEl.innerHTML=pending.map(u=>`<div class="tool-item" style="cursor:default"><div class="tool-item-left"><div><div class="tool-item-name"><span class="status-dot pending"></span>${esc(u.username)}</div><div class="tool-item-sub">${u.remark?'群昵称: '+esc(u.remark):''}  注册: ${new Date(u.createdAt).toLocaleString()}</div></div></div><div class="actions"><button class="act-btn ok" onclick="userAction('approve','${esc(u.username)}')">通过</button><button class="act-btn del" onclick="userAction('reject','${esc(u.username)}')">拒绝</button></div></div>`).join('');
   const aEl=$('approvedList');
   if(!approved.length)aEl.innerHTML='<div class="empty-state">暂无用户</div>';
-  else aEl.innerHTML=approved.map(u=>`<div class="tool-item" style="cursor:default"><div class="tool-item-left"><div><div class="tool-item-name"><span class="status-dot approved"></span>${esc(u.username)}${u.role==='admin'?' (管理员)':''}</div><div class="tool-item-sub">${u.remark?'群昵称: '+esc(u.remark):''}</div></div></div>${u.role!=='admin'?`<div class="actions"><button class="act-btn del" onclick="userAction('delete','${esc(u.username)}')">删除</button></div>`:''}</div>`).join('');
+  else aEl.innerHTML=approved.map(u=>`<div class="tool-item" style="cursor:default"><div class="tool-item-left"><div><div class="tool-item-name"><span class="status-dot approved"></span>${esc(u.username)}${u.role==='admin'?' (管理员)':''}</div><div class="tool-item-sub">${u.remark?'群昵称: '+esc(u.remark):''}</div></div></div><div class="actions"><button class="act-btn" style="color:var(--accent);border:1px solid var(--accent);background:transparent;font-size:11px;padding:4px 10px;border-radius:8px" onclick="userAction('resetPassword','${esc(u.username)}')">重置密码</button>${u.role!=='admin'?`<button class="act-btn del" onclick="userAction('delete','${esc(u.username)}')">删除</button>`:''}</div></div>`).join('');
 }
-function userAction(action,username){
-  let users=loadAuthUsers();
-  if(action==='approve'){const u=users.find(x=>x.username===username);if(u){u.status='approved';saveAuthUsers(users);showToast(username+' 已通过');}}
-  else if(action==='reject'){const u=users.find(x=>x.username===username);if(u){u.status='rejected';saveAuthUsers(users);showToast(username+' 已拒绝');}}
-  else if(action==='delete'){if(!confirm('确定删除用户 '+username+'？'))return;users=users.filter(x=>x.username!==username);saveAuthUsers(users);showToast(username+' 已删除');}
-  loadUsers();
+async function userAction(action,username){
+  if(action==='delete'&&!confirm('确定删除用户 '+username+'？'))return;
+  if(action==='resetPassword'&&!confirm('确定将 '+username+' 的密码重置为 123456？'))return;
+  try{
+    const r=await fetch('/api/auth/users',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,username})});
+    const d=await r.json();
+    if(d.success){showToast(action==='resetPassword'?username+' 密码已重置为 123456':d.message);loadUsers();}
+    else showToast(d.message||'操作失败');
+  }catch{showToast('网络错误');}
 }
 
 /* ============ BLOCKED IMAGES / IP BLACKLIST ============ */
@@ -760,8 +771,8 @@ function saveDefaultStorage(){
   $('defaultStorageLimit').value=formatStorageGB(gb);
   showToast('默认限额已设为 '+formatStorageGB(gb));
 }
-function loadAccounts(){
-  const users=loadAuthUsers();
+async function loadAccounts(){
+  const users=await loadUsersFromServer();
   const limits=getStorageLimits();
   const defaultGB=getDefaultStorageLimit();
   $('defaultStorageLimit').value=formatStorageGB(defaultGB);

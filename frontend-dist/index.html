@@ -1779,18 +1779,18 @@ function authGetSessions(){try{return JSON.parse(localStorage.getItem(AUTH_SESSI
 function authCurrentUser(){
   const s=authGetSession();
   if(!s) return null;
-  const users=authLoadUsers();
-  return users.find(u=>u.username===s.username&&u.status==='approved')||null;
+  // Server already validated during login; session is source of truth
+  return {username:s.username, role:s.role||'user', status:'approved'};
 }
 function authIsAdmin(){const s=authGetSession();return s&&s.username===ADMIN_USER;}
 function authSwitchTo(username){
-  const users=authLoadUsers();
-  const user=users.find(u=>u.username===username&&u.status==='approved');
-  if(!user)return;
+  const sessions=authGetSessions();
+  const sess=sessions.find(s=>s.username===username);
+  if(!sess)return;
   // Save current data before switching
   saveConfig(); saveUserImages(); saveUserAlbums();
   // Switch active session (don't remove from sessions list)
-  localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username:user.username,role:user.role,loginAt:Date.now()}));
+  localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({username:sess.username,role:sess.role||'user',loginAt:Date.now()}));
   // Load new user's everything
   loadConfig(); applyConfig();
   loadUserImages(); loadUserAlbums();
@@ -1953,14 +1953,11 @@ function onAuthReady(){
 function renderUserCard(){
   const user=authCurrentUser();if(!user)return;
   const sessions=authGetSessions();
-  const allUsers=authLoadUsers();
   const curCfg=config;
   const others=sessions.filter(s=>s.username!==user.username).map(s=>{
-    const u=allUsers.find(x=>x.username===s.username&&x.status==='approved');
-    if(!u)return null;
-    const c=getUserConfig(u.username);
-    return{username:u.username,name:c.name||u.username,avatar:c.avatar||DEFAULT_CONFIG.avatar};
-  }).filter(Boolean);
+    const c=getUserConfig(s.username);
+    return{username:s.username,name:c.name||s.username,avatar:c.avatar||DEFAULT_CONFIG.avatar};
+  });
   let h='';
   // Current user header
   h+='<div class="uc-header"><img class="uc-avatar" src="'+escHtml(curCfg.avatar||DEFAULT_CONFIG.avatar)+'" alt=""><div class="uc-info"><div class="uc-name">'+escHtml(curCfg.name||user.username)+'</div><div class="uc-account">('+escHtml(user.username)+')</div></div></div>';
@@ -2173,7 +2170,7 @@ async function renderAdminPanel(){
     if(!pending.length){pList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">暂无待审核用户</div>';}
     else{pList.innerHTML=pending.map(u=>`<div class="admin-user-card"><div class="admin-user-info"><div class="admin-user-name">${u.username}</div><div class="admin-user-meta">注册时间: ${new Date(u.createdAt).toLocaleString()}</div><div class="admin-user-remark">群内昵称: ${u.remark||'未填写'}</div></div><div class="admin-user-actions"><button class="admin-btn approve" onclick="adminApprove('${u.username}')">通过</button><button class="admin-btn reject" onclick="adminReject('${u.username}')">拒绝</button></div></div>`).join('');}
     if(!approved.length){aList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">暂无用户</div>';}
-    else{aList.innerHTML=approved.map(u=>`<div class="admin-user-card"><div class="admin-user-info"><div class="admin-user-name">${u.username}${u.username===ADMIN_USER?' (管理员)':''}</div><div class="admin-user-meta">${u.remark?'群昵称: '+u.remark:''}</div></div>${u.username!==ADMIN_USER?`<div class="admin-user-actions"><button class="admin-btn delete" onclick="adminDelete('${u.username}')">删除</button></div>`:''}</div>`).join('');}
+    else{aList.innerHTML=approved.map(u=>`<div class="admin-user-card"><div class="admin-user-info"><div class="admin-user-name">${u.username}${u.username===ADMIN_USER?' (管理员)':''}</div><div class="admin-user-meta">${u.remark?'群昵称: '+u.remark:''}</div></div><div class="admin-user-actions"><button class="admin-btn" style="color:#5b8c6e;border:1px solid #5b8c6e;background:transparent;font-size:11px;padding:4px 10px;border-radius:8px" onclick="adminResetPw('${u.username}')">重置密码</button>${u.username!==ADMIN_USER?`<button class="admin-btn delete" onclick="adminDelete('${u.username}')">删除</button>`:''}</div></div>`).join('');}
   }catch(e){pList.innerHTML='<div style="color:#e74c3c;font-size:13px;padding:8px">网络错误</div>';}
 }
 async function adminApprove(uname){
@@ -2199,6 +2196,15 @@ async function adminDelete(uname){
       const d=await r.json();
       showToast(d.success?uname+' 已删除':d.message);
       renderAdminPanel();
+    }catch(e){showToast('操作失败');}
+  }});
+}
+async function adminResetPw(uname){
+  gdShow({title:'重置密码',desc:'确定将 '+uname+' 的密码重置为 123456？',confirm:'重置',confirmClass:'gd-confirm',onConfirm:async()=>{
+    try{
+      const r=await fetch('/api/auth/users',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'resetPassword',username:uname})});
+      const d=await r.json();
+      showToast(d.success?uname+' 密码已重置为 123456':d.message);
     }catch(e){showToast('操作失败');}
   }});
 }
