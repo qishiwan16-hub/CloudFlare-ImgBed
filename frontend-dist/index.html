@@ -1756,15 +1756,9 @@ const AUTH_SESSION_KEY='imgbed_session';
 const AUTH_SESSIONS_KEY='imgbed_sessions'; // all logged-in accounts
 const ADMIN_USER='shenhanyan';
 
-function authLoadUsers(){try{return JSON.parse(localStorage.getItem(AUTH_USERS_KEY)||'[]');}catch(e){return[];}}
-function authSaveUsers(u){localStorage.setItem(AUTH_USERS_KEY,JSON.stringify(u));}
-function authSeedAdmin(){
-  let users=authLoadUsers();
-  if(!users.find(u=>u.username===ADMIN_USER)){
-    users.push({username:ADMIN_USER,password:authHash('123456'),role:'admin',status:'approved',remark:'',createdAt:Date.now()});
-    authSaveUsers(users);
-  }
-}
+function authLoadUsers(){return[];} // deprecated, users now on server
+function authSaveUsers(u){} // deprecated
+function authSeedAdmin(){} // deprecated, server auto-seeds admin
 // Simple hash (not crypto-secure, fine for localStorage demo)
 function authHash(pw){let h=0;for(let i=0;i<pw.length;i++){h=((h<<5)-h)+pw.charCodeAt(i);h|=0;}return 'h_'+h;}
 function authGetSession(){try{return JSON.parse(localStorage.getItem(AUTH_SESSION_KEY));}catch(e){return null;}}
@@ -1823,7 +1817,7 @@ function showAuthMsg(type,msg){
   el.textContent=msg;
 }
 
-function authRegister(){
+async function authRegister(){
   const username=document.getElementById('regUser').value.trim();
   const pwd=document.getElementById('regPwd').value;
   const pwd2=document.getElementById('regPwd2').value;
@@ -1833,45 +1827,47 @@ function authRegister(){
   if(!pwd||pwd.length<6||pwd.length>20){showAuthMsg('error','密码 6-20 位');return;}
   if(pwd!==pwd2){showAuthMsg('error','两次密码不一致');return;}
   if(!remark){showAuthMsg('error','请填写群内昵称');return;}
-  let users=authLoadUsers();
-  if(users.find(u=>u.username===username)){showAuthMsg('error','用户名已存在');return;}
-  users.push({username,password:authHash(pwd),role:'user',status:'pending',remark,createdAt:Date.now()});
-  authSaveUsers(users);
-  showAuthMsg('success','注册申请已提交，请等待管理员审核');
-  document.getElementById('regUser').value='';
-  document.getElementById('regPwd').value='';
-  document.getElementById('regPwd2').value='';
-  document.getElementById('regRemark').value='';
+  try{
+    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password:authHash(pwd),remark})});
+    const d=await r.json();
+    if(!d.success){showAuthMsg('error',d.message);return;}
+    showAuthMsg('success',d.message);
+    document.getElementById('regUser').value='';
+    document.getElementById('regPwd').value='';
+    document.getElementById('regPwd2').value='';
+    document.getElementById('regRemark').value='';
+  }catch(e){showAuthMsg('error','网络错误，请重试');}
 }
 
-function authLogin(){
+async function authLogin(){
   const username=document.getElementById('loginUser').value.trim();
   const pwd=document.getElementById('loginPwd').value;
   if(!username||!pwd){showAuthMsg('error','请输入用户名和密码');return;}
   if(!document.getElementById('loginAgree').checked){showAuthMsg('error','请先同意使用条款');return;}
-  const users=authLoadUsers();
-  const user=users.find(u=>u.username===username);
-  if(!user){showAuthMsg('error','用户不存在');return;}
-  if(user.password!==authHash(pwd)){showAuthMsg('error','密码错误');return;}
-  if(user.status==='pending'){showAuthMsg('info','你的注册申请正在审核中');return;}
-  if(user.status==='rejected'){showAuthMsg('error','注册申请未通过');return;}
-  authSetSession(user);
-  document.getElementById('authOverlay').classList.remove('show');
-  loadConfig(); applyConfig();
-  loadUserImages(); loadUserAlbums();
-  updateHomeStats();
-  renderHomeGallery(); renderHomeAlbums();
-  onAuthReady();
-  // Sync: try pull from server, if empty push local
-  _syncPullAll().then(pulled=>{
-    if(pulled){
-      applyConfig();
-      updateHomeStats();
-      renderHomeGallery(); renderHomeAlbums(); onAuthReady();
-    }else{
-      _syncPushAll();
-    }
-  });
+  try{
+    const r=await fetch('/api/auth/userLogin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password:authHash(pwd)})});
+    const d=await r.json();
+    if(!d.success){showAuthMsg(d.status==='pending'?'info':'error',d.message);return;}
+    const user=d.user;
+    authSetSession(user);
+    document.getElementById('authOverlay').classList.remove('show');
+    loadConfig(); applyConfig();
+    loadUserImages(); loadUserAlbums();
+    updateHomeStats();
+    renderHomeGallery(); renderHomeAlbums();
+    onAuthReady();
+    // Sync: try pull from server, if empty push local
+    loadServerConfig();
+    _syncPullAll().then(pulled=>{
+      if(pulled){
+        applyConfig();
+        updateHomeStats();
+        renderHomeGallery(); renderHomeAlbums(); onAuthReady();
+      }else{
+        _syncPushAll();
+      }
+    });
+  }catch(e){showAuthMsg('error','网络错误，请重试');}
 }
 
 function authLogout(){
@@ -2138,7 +2134,7 @@ function openChangePw(){
   document.getElementById('chpwMsg').className='auth-msg';
   document.getElementById('chpwOverlay').classList.add('show');
 }
-function doChangePw(){
+async function doChangePw(){
   const old=document.getElementById('chpwOld').value;
   const np=document.getElementById('chpwNew').value;
   const np2=document.getElementById('chpwNew2').value;
@@ -2147,14 +2143,13 @@ function doChangePw(){
   if(!np||np.length<6||np.length>20){msgEl.className='auth-msg error';msgEl.textContent='新密码 6-20 位';return;}
   if(np!==np2){msgEl.className='auth-msg error';msgEl.textContent='两次新密码不一致';return;}
   const sess=authGetSession();
-  let users=authLoadUsers();
-  const idx=users.findIndex(u=>u.username===sess.username);
-  if(idx<0) return;
-  if(users[idx].password!==authHash(old)){msgEl.className='auth-msg error';msgEl.textContent='当前密码错误';return;}
-  users[idx].password=authHash(np);
-  authSaveUsers(users);
-  msgEl.className='auth-msg success';msgEl.textContent='密码修改成功';
-  setTimeout(()=>document.getElementById('chpwOverlay').classList.remove('show'),1200);
+  try{
+    const r=await fetch('/api/auth/changePassword',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:sess.username,oldPassword:authHash(old),newPassword:authHash(np)})});
+    const d=await r.json();
+    if(!d.success){msgEl.className='auth-msg error';msgEl.textContent=d.message;return;}
+    msgEl.className='auth-msg success';msgEl.textContent='密码修改成功';
+    setTimeout(()=>document.getElementById('chpwOverlay').classList.remove('show'),1200);
+  }catch(e){msgEl.className='auth-msg error';msgEl.textContent='网络错误';}
 }
 
 // ADMIN PANEL
@@ -2163,32 +2158,49 @@ function openAdminPanel(){
   renderAdminPanel();
   document.getElementById('adminOverlay').classList.add('show');
 }
-function renderAdminPanel(){
-  const users=authLoadUsers();
-  const pending=users.filter(u=>u.status==='pending');
-  const approved=users.filter(u=>u.status==='approved');
+async function renderAdminPanel(){
   const pList=document.getElementById('adminPendingList');
-  if(!pending.length){pList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">暂无待审核用户</div>';}
-  else{pList.innerHTML=pending.map(u=>`<div class="admin-user-card"><div class="admin-user-info"><div class="admin-user-name">${u.username}</div><div class="admin-user-meta">注册时间: ${new Date(u.createdAt).toLocaleString()}</div><div class="admin-user-remark">群内昵称: ${u.remark||'未填写'}</div></div><div class="admin-user-actions"><button class="admin-btn approve" onclick="adminApprove('${u.username}')">通过</button><button class="admin-btn reject" onclick="adminReject('${u.username}')">拒绝</button></div></div>`).join('');}
   const aList=document.getElementById('adminApprovedList');
-  if(!approved.length){aList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">暂无用户</div>';}
-  else{aList.innerHTML=approved.map(u=>`<div class="admin-user-card"><div class="admin-user-info"><div class="admin-user-name">${u.username}${u.username===ADMIN_USER?' (管理员)':''}</div><div class="admin-user-meta">${u.remark?'群昵称: '+u.remark:''}</div></div>${u.username!==ADMIN_USER?`<div class="admin-user-actions"><button class="admin-btn delete" onclick="adminDelete('${u.username}')">删除</button></div>`:'</div>'}`).join('');}
+  pList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">加载中...</div>';
+  aList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">加载中...</div>';
+  try{
+    const r=await fetch('/api/auth/users',{credentials:'include'});
+    const d=await r.json();
+    if(!d.success){pList.innerHTML='<div style="color:#e74c3c;font-size:13px;padding:8px">加载失败: '+d.message+'</div>';return;}
+    const users=d.users||[];
+    const pending=users.filter(u=>u.status==='pending');
+    const approved=users.filter(u=>u.status==='approved');
+    if(!pending.length){pList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">暂无待审核用户</div>';}
+    else{pList.innerHTML=pending.map(u=>`<div class="admin-user-card"><div class="admin-user-info"><div class="admin-user-name">${u.username}</div><div class="admin-user-meta">注册时间: ${new Date(u.createdAt).toLocaleString()}</div><div class="admin-user-remark">群内昵称: ${u.remark||'未填写'}</div></div><div class="admin-user-actions"><button class="admin-btn approve" onclick="adminApprove('${u.username}')">通过</button><button class="admin-btn reject" onclick="adminReject('${u.username}')">拒绝</button></div></div>`).join('');}
+    if(!approved.length){aList.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px">暂无用户</div>';}
+    else{aList.innerHTML=approved.map(u=>`<div class="admin-user-card"><div class="admin-user-info"><div class="admin-user-name">${u.username}${u.username===ADMIN_USER?' (管理员)':''}</div><div class="admin-user-meta">${u.remark?'群昵称: '+u.remark:''}</div></div>${u.username!==ADMIN_USER?`<div class="admin-user-actions"><button class="admin-btn delete" onclick="adminDelete('${u.username}')">删除</button></div>`:''}</div>`).join('');}
+  }catch(e){pList.innerHTML='<div style="color:#e74c3c;font-size:13px;padding:8px">网络错误</div>';}
 }
-function adminApprove(uname){
-  let users=authLoadUsers();
-  const u=users.find(u=>u.username===uname);
-  if(u){u.status='approved';authSaveUsers(users);renderAdminPanel();showToast(uname+' 已通过审核');}
+async function adminApprove(uname){
+  try{
+    const r=await fetch('/api/auth/users',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'approve',username:uname})});
+    const d=await r.json();
+    showToast(d.success?uname+' 已通过审核':d.message);
+    renderAdminPanel();
+  }catch(e){showToast('操作失败');}
 }
-function adminReject(uname){
-  let users=authLoadUsers();
-  const u=users.find(u=>u.username===uname);
-  if(u){u.status='rejected';authSaveUsers(users);renderAdminPanel();showToast(uname+' 已拒绝');}
+async function adminReject(uname){
+  try{
+    const r=await fetch('/api/auth/users',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'reject',username:uname})});
+    const d=await r.json();
+    showToast(d.success?uname+' 已拒绝':d.message);
+    renderAdminPanel();
+  }catch(e){showToast('操作失败');}
 }
-function adminDelete(uname){
-  if(!confirm('确定删除用户 '+uname+' ?')) return;
-  let users=authLoadUsers();
-  users=users.filter(u=>u.username!==uname);
-  authSaveUsers(users);renderAdminPanel();showToast(uname+' 已删除');
+async function adminDelete(uname){
+  gdShow({title:'删除用户',desc:'确定要删除用户 '+uname+' ?',confirm:'删除',confirmClass:'gd-confirm',onConfirm:async()=>{
+    try{
+      const r=await fetch('/api/auth/users',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',username:uname})});
+      const d=await r.json();
+      showToast(d.success?uname+' 已删除':d.message);
+      renderAdminPanel();
+    }catch(e){showToast('操作失败');}
+  }});
 }
 
 const DEFAULT_CONFIG = { name:'我的图床', bio:'把喜欢的瞬间，留在这里。', avatar:'/static/media/logo.png', cover:'/img/background-light.f17603bc.jpg', galleryCount:6, avatarShape:'circle', theme:'auto' };
@@ -3750,8 +3762,21 @@ function deleteSelected(){
   gdShow({title:'删除图片',desc:'确定要删除选中的 '+count+' 张图片吗？\n此操作不可撤销。',
     confirm:'删除',cancel:'取消',confirmClass:'danger',
     onConfirm:()=>{
-      Array.from(selectedSet).map(Number).sort((a,b)=>b-a).forEach(i=>allImages.splice(i,1));
+      const delSrcs=Array.from(selectedSet).map(Number).sort((a,b)=>b-a).map(i=>{
+        const img=allImages[i];
+        allImages.splice(i,1);
+        return img?.src;
+      }).filter(Boolean);
       saveUserImages();
+      // Server-side delete
+      delSrcs.forEach(src=>{
+        const fname=src.split('/').pop();
+        if(fname)fetch('/api/manage/delete/'+encodeURIComponent(fname),{method:'DELETE',credentials:'include'}).catch(()=>{});
+      });
+      // Also remove from albums
+      const delSet=new Set(delSrcs);
+      userAlbums.forEach(a=>{if(a.imageSrcs)a.imageSrcs=a.imageSrcs.filter(s=>!delSet.has(s));});
+      saveUserAlbums();
       exitSelectMode();renderGalleryPage();renderHomeGallery();renderHomeAlbums();
       updateHomeStats();
       showToast('已删除 '+count+' 张图片');
@@ -3996,8 +4021,15 @@ function deleteSelectedAlbums(){
     if(!keepImgs){
       const allSrcs=new Set();
       toDelete.forEach(i=>(userAlbums[i].imageSrcs||[]).forEach(s=>allSrcs.add(s)));
-      if(allSrcs.size)allImages=allImages.filter(img=>!allSrcs.has(img.src));
-      saveUserImages();
+      if(allSrcs.size){
+        allImages=allImages.filter(img=>!allSrcs.has(img.src));
+        saveUserImages();
+        // Server-side delete
+        allSrcs.forEach(src=>{
+          const fname=src.split('/').pop();
+          if(fname)fetch('/api/manage/delete/'+encodeURIComponent(fname),{method:'DELETE',credentials:'include'}).catch(()=>{});
+        });
+      }
     }
     toDelete.forEach(i=>userAlbums.splice(i,1));
     saveUserAlbums();
@@ -4186,16 +4218,21 @@ function deleteSelectedApImgs(){
   if(!album)return;
   const ui=getUserAlbumIdx();
   const count=apImgSelectedSet.size;
-  const idxs=[...apImgSelectedSet].map(Number).sort((a,b)=>b-a);
+  // Collect src URLs from selected indices in album.images
+  const selectedSrcs=[...apImgSelectedSet].map(aidx=>album.images[Number(aidx)]?.src).filter(Boolean);
   const doRemove=(alsoDelete)=>{
     if(ui>=0&&userAlbums[ui]){
-      const removedSrcs=idxs.map(i=>(userAlbums[ui].imageSrcs||[])[i]).filter(Boolean);
-      idxs.forEach(i=>{if(userAlbums[ui].imageSrcs)userAlbums[ui].imageSrcs.splice(i,1);});
+      const srcSet=new Set(selectedSrcs);
+      userAlbums[ui].imageSrcs=(userAlbums[ui].imageSrcs||[]).filter(s=>!srcSet.has(s));
       saveUserAlbums();refreshAlbumData();
-      if(alsoDelete&&removedSrcs.length){
-        const delSet=new Set(removedSrcs);
-        allImages=allImages.filter(img=>!delSet.has(img.src));
+      if(alsoDelete&&selectedSrcs.length){
+        allImages=allImages.filter(img=>!srcSet.has(img.src));
         saveUserImages();updateHomeStats();
+        // Also delete from server
+        selectedSrcs.forEach(src=>{
+          const fname=src.split('/').pop();
+          if(fname)fetch('/api/manage/delete/'+encodeURIComponent(fname),{method:'DELETE',credentials:'include'}).catch(()=>{});
+        });
       }
     }
     exitApImgSelectMode();
@@ -4627,12 +4664,8 @@ function initLightbox(){
   document.getElementById('clbOverlay').addEventListener('click',(e)=>{if(e.target===document.getElementById('clbOverlay'))clbClose();});
 }
 function openLightbox(src){
-  // Non-image files: open in new tab or download
   const name=allImages.find(i=>i.src===src)?.name||src.split('/').pop()||'';
-  if(!isImageFile(name)&&!isVideoFile(name)){
-    window.open(src,'_blank');return;
-  }
-  // Find index in allImages
+  // All file types go through the flip card
   fcList=allImages;
   fcIdx=allImages.findIndex(img=>img.src===src);
   if(fcIdx<0)fcIdx=0;
@@ -4656,9 +4689,19 @@ function fcUpdate(){
     let vid=document.getElementById('fcVideo');
     if(!vid){vid=document.createElement('video');vid.id='fcVideo';vid.controls=true;vid.style.cssText='width:100%;height:100%;object-fit:contain;border-radius:16px';fcImgEl.parentNode.insertBefore(vid,fcImgEl);}
     vid.src=img.src;vid.style.display='';
+    let ficon=document.getElementById('fcFileIcon');if(ficon)ficon.style.display='none';
+    document.getElementById('fcBackThumb').src='';
+  }else if(!isImageFile(img.name)){
+    fcImgEl.style.display='none';
+    let vid=document.getElementById('fcVideo');if(vid){vid.style.display='none';vid.pause();}
+    let ficon=document.getElementById('fcFileIcon');
+    if(!ficon){ficon=document.createElement('div');ficon.id='fcFileIcon';ficon.style.cssText='width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer';fcImgEl.parentNode.insertBefore(ficon,fcImgEl);}
+    ficon.style.display='';ficon.innerHTML='<div style="transform:scale(1.8);margin-bottom:16px">'+fileTypeIcon(img.name)+'</div><div style="font-size:13px;color:#888;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cleanFileName(img.name)+'</div><div style="font-size:11px;color:#aaa">点击图标打开文件</div>';
+    ficon.onclick=()=>window.open(img.src,'_blank');
     document.getElementById('fcBackThumb').src='';
   }else{
     let vid=document.getElementById('fcVideo');if(vid){vid.style.display='none';vid.pause();}
+    let ficon=document.getElementById('fcFileIcon');if(ficon)ficon.style.display='none';
     fcImgEl.style.display='';fcImgEl.src=img.src;
     document.getElementById('fcBackThumb').src=img.src;
   }
