@@ -1894,20 +1894,20 @@ function authCheckLogin(){
   authSeedAdmin();
   const user=authCurrentUser();
   if(!user){
-    // No user yet - load defaults
     loadConfig(); applyConfig(); initTheme();
     loadGalleryDemo();
     document.getElementById('authOverlay').classList.add('show');
     switchAuthTab('login');
     return false;
   }
+  // Verify session is still valid on server
+  _verifySession(user);
   // User exists - load their data (localStorage first for speed)
   loadConfig(); applyConfig(); initTheme();
   loadUserImages(); loadUserAlbums();
   updateHomeStats();
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
-  // Background sync from server (overwrites local if server has data)
   loadServerConfig();
   _syncPullAll().then(pulled=>{
     if(pulled){
@@ -1915,11 +1915,31 @@ function authCheckLogin(){
       updateHomeStats();
       renderHomeGallery(); renderHomeAlbums(); onAuthReady();
     }else{
-      // Server empty → push local data up for first time
       _syncPushAll();
     }
   });
   return true;
+}
+async function _verifySession(user){
+  try{
+    const r=await fetch('/api/auth/userLogin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user.username,password:'__verify_only__'})});
+    const d=await r.json();
+    // If user doesn't exist at all on server → account was deleted
+    if(r.status===404){
+      _showAccountDeleted();
+    }
+  }catch(e){}
+}
+function _showAccountDeleted(){
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center';
+  ov.innerHTML='<div style="background:#fff;border-radius:22px;padding:40px 32px;max-width:320px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2)"><div style="font-size:48px;margin-bottom:16px">⚠️</div><div style="font-size:18px;font-weight:700;margin-bottom:8px">该账号已注销</div><div style="font-size:14px;color:#888;margin-bottom:24px">请重新注册</div><button onclick="_doAccountDeletedReset()" style="width:100%;padding:14px;border:none;border-radius:14px;background:#222;color:#fff;font-size:15px;font-weight:600;cursor:pointer">返回登录页</button></div>';
+  document.body.appendChild(ov);
+}
+function _doAccountDeletedReset(){
+  authClearSession();
+  localStorage.removeItem(AUTH_SESSIONS_KEY);
+  location.reload();
 }
 
 let serverConfig={};
@@ -4040,7 +4060,7 @@ function deleteSelectedAlbums(){
     toDelete.forEach(i=>userAlbums.splice(i,1));
     saveUserAlbums();
     exitAlbumSelectMode();
-    refreshAlbumData();renderAlbumList();renderHomeAlbums();renderHomeGallery();updateHomeStats();
+    apView='list';refreshAlbumData();renderAlbumPage();renderHomeAlbums();renderHomeGallery();updateHomeStats();
     showToast(keepImgs?'已删除 '+count+' 个相册，图片已保留':'已删除 '+count+' 个相册及所有图片');
   };
   const btns=[{text:'保留图片',style:'font-weight:600',onClick:()=>doDelete(true)}];
@@ -4227,19 +4247,25 @@ function deleteSelectedApImgs(){
   // Collect src URLs from selected indices in album.images
   const selectedSrcs=[...apImgSelectedSet].map(aidx=>album.images[Number(aidx)]?.src).filter(Boolean);
   const doRemove=(alsoDelete)=>{
+    const srcSet=new Set(selectedSrcs);
     if(ui>=0&&userAlbums[ui]){
-      const srcSet=new Set(selectedSrcs);
       userAlbums[ui].imageSrcs=(userAlbums[ui].imageSrcs||[]).filter(s=>!srcSet.has(s));
       saveUserAlbums();refreshAlbumData();
-      if(alsoDelete&&selectedSrcs.length){
-        allImages=allImages.filter(img=>!srcSet.has(img.src));
-        saveUserImages();updateHomeStats();
-        // Also delete from server
-        selectedSrcs.forEach(src=>{
-          const fname=src.split('/').pop();
-          if(fname)fetch('/api/manage/delete/'+encodeURIComponent(fname),{method:'DELETE',credentials:'include'}).catch(()=>{});
-        });
-      }
+    }
+    if(alsoDelete&&selectedSrcs.length){
+      allImages=allImages.filter(img=>!srcSet.has(img.src));
+      saveUserImages();updateHomeStats();
+      // Also remove from all albums
+      userAlbums.forEach(a=>{if(a.imageSrcs)a.imageSrcs=a.imageSrcs.filter(s=>!srcSet.has(s));});
+      saveUserAlbums();refreshAlbumData();
+      selectedSrcs.forEach(src=>{
+        const fname=src.split('/').pop();
+        if(fname)fetch('/api/manage/delete/'+encodeURIComponent(fname),{method:'DELETE',credentials:'include'}).catch(()=>{});
+      });
+    }
+    if(ui<0&&!alsoDelete){
+      // 未分类 "移出相册" doesn't make sense, skip
+      showToast('未分类图片无法移出');return;
     }
     exitApImgSelectMode();
     renderAlbumDetail();renderHomeAlbums();renderHomeGallery();
@@ -4604,8 +4630,14 @@ function asDelete(){
   const doDelete=(keepImgs)=>{
     if(!keepImgs){
       const srcs=new Set((userAlbums[ui].imageSrcs||[]));
-      if(srcs.size)allImages=allImages.filter(img=>!srcs.has(img.src));
-      saveUserImages();
+      if(srcs.size){
+        allImages=allImages.filter(img=>!srcs.has(img.src));
+        saveUserImages();
+        srcs.forEach(src=>{
+          const fname=src.split('/').pop();
+          if(fname)fetch('/api/manage/delete/'+encodeURIComponent(fname),{method:'DELETE',credentials:'include'}).catch(()=>{});
+        });
+      }
     }
     userAlbums.splice(ui,1);
     saveUserAlbums();refreshAlbumData();
