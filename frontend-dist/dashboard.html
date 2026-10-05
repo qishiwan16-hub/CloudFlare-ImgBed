@@ -13,6 +13,16 @@ body.dark .pill-btn{background:rgba(40,40,40,.85);color:#e8e4df}
 body.dark .settings-input,body.dark select,body.dark textarea{background:#2a2826;border-color:#444;color:#e8e4df}
 body.dark .toggle-slider{background:#444}
 body.dark input:checked+.toggle-slider{background:var(--accent)}
+body.dark .header-cover{background:#2a2826}
+body.dark .settings-panel{background:var(--bg)}
+body.dark .acc-item{border-color:#333}
+body.dark .tab-btn{color:var(--sub)}
+body.dark .tab-btn.active{color:var(--text);border-color:var(--accent)}
+body.dark .detail-panel{background:var(--card);border-color:#333}
+body.dark .login-card{background:var(--card);border-color:#333}
+body.dark .login-input{background:#2a2826;border-color:#444;color:#e8e4df}
+body.dark .modal-overlay .modal{background:var(--card);border-color:#333}
+body.dark .empty-state{color:var(--sub)}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:0;height:0}
 
@@ -89,7 +99,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','P
 .detail-desc-text{font-size:13px;line-height:1.7}
 
 /* SETTINGS PANEL */
-.settings-panel{display:none;padding:20px;padding-bottom:80px}
+.settings-panel{display:none;padding:20px;padding-bottom:80px;background:var(--bg);min-height:100vh}
 .settings-panel.active{display:block}
 .settings-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
 .settings-section-title{font-size:16px;font-weight:700;margin-bottom:4px}
@@ -207,7 +217,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','P
     <div class="header-overlay"></div>
     <div class="header-actions">
       <button class="pill-btn" onclick="location.href='/'">← 首页</button>
-      <div style="display:flex;gap:8px"><button class="pill-btn" id="dashThemeBtn" onclick="toggleDashTheme()">🌙</button><button class="pill-btn" onclick="refreshAll()">刷新</button><button class="pill-btn" onclick="showSettings()">设置</button></div>
+      <div style="display:flex;gap:8px"><button class="pill-btn" id="dashThemeBtn" onclick="toggleDashTheme()" style="padding:8px 12px;display:flex;align-items:center"><svg id="themeIconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg><svg id="themeIconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button><button class="pill-btn" onclick="refreshAll()">刷新</button><button class="pill-btn" onclick="showSettings()">设置</button></div>
     </div>
   </div>
 
@@ -823,8 +833,10 @@ function toggleDashTheme(){
   updateThemeBtn();
 }
 function updateThemeBtn(){
-  const btn=$('dashThemeBtn');
-  if(btn)btn.textContent=document.body.classList.contains('dark')?'☀️':'🌙';
+  const isDark=document.body.classList.contains('dark');
+  const moon=$('themeIconMoon'),sun=$('themeIconSun');
+  if(moon)moon.style.display=isDark?'none':'';
+  if(sun)sun.style.display=isDark?'':'none';
 }
 initDashTheme();
 init();

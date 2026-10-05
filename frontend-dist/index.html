@@ -1938,8 +1938,6 @@ function applyServerConfig(){
   const sc=serverConfig;
   if(sc.siteTitle)document.title=sc.siteTitle;
   if(sc.siteIcon){const link=document.querySelector('link[rel="icon"]');if(link)link.href=sc.siteIcon;}
-  if(sc.ownerName)document.getElementById('displayName').textContent=sc.ownerName;
-  if(sc.logoUrl)document.getElementById('avatarImg').src=sc.logoUrl;
   if(sc.announcement){
     const el=document.getElementById('announcementBar');
     if(el){el.innerHTML=sc.announcement;el.style.display='';}
