@@ -656,6 +656,10 @@ async function loadSecurityConfig(){
 }
 async function saveSecurityConfig(){
   if(!securityConfigData)return;const data=JSON.parse(JSON.stringify(securityConfigData));
+  if(!data.auth)data.auth={};
+  if(!data.auth.admin)data.auth.admin={};
+  if(!data.auth.user)data.auth.user={};
+  if(!data.access)data.access={};
   data.auth.admin.adminUsername=$('secAdminUser').value.trim();
   const ap=$('secAdminPass').value;data.auth.admin.adminPassword=ap||'';
   const ua=$('secUserAuth').value;data.auth.user.authCode=ua||'';
