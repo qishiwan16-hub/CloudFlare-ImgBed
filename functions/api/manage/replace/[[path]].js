@@ -15,6 +15,7 @@ import {
     resolveTelegramCredentials,
     resolveWebDAVCredentials,
 } from '../../../utils/metadata/channelCredentials.js';
+import { purgeCFCache } from '../../../utils/purgeCache.js';
 
 export async function onRequestPost(context) {
     const { request, env, params } = context;
@@ -82,20 +83,30 @@ export async function onRequestPost(context) {
         const updatedMeta = { ...meta, FileType: newFileType, FileSize: (file.size / 1024 / 1024).toFixed(2) };
         await db.put(fileId, record.value || '', { metadata: updatedMeta });
 
-        // Purge CDN cache
+        // Purge CDN cache for all URLs (main + aliases)
         try {
             const url = new URL(request.url);
-            const cacheUrl = `https://${url.hostname}/OvO/${fileId}`;
-            if (env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_API_TOKEN) {
-                await fetch(`https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/purge_cache`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ files: [cacheUrl] })
-                }).catch(() => {});
+            const origin = url.origin;
+            const urlsToPurge = [`${origin}/OvO/${fileId}`];
+
+            // Also purge alias URLs if they exist
+            if (meta.TimeStamp) urlsToPurge.push(`${origin}/OvO/${meta.TimeStamp}`);
+            if (meta.ShortAlias) urlsToPurge.push(`${origin}/OvO/${meta.ShortAlias}`);
+
+            // Method 1: Workers Cache API (cache.delete has bug, use put with max-age=0)
+            const cache = caches.default;
+            const nullResponse = () => new Response(null, { headers: { 'Cache-Control': 'max-age=0' } });
+            for (const u of urlsToPurge) {
+                try { await cache.put(u, nullResponse()); } catch {}
+            }
+
+            // Method 2: Cloudflare Zone API via utility
+            for (const u of urlsToPurge) {
+                try { await purgeCFCache(env, u); } catch {}
             }
         } catch {}
 
-        return Response.json({ success: true, message: '文件已替换' });
+        return Response.json({ success: true, message: '文件已替换', bust: Date.now() });
     } catch (e) {
         return Response.json({ success: false, message: '替换失败: ' + e.message }, { status: 500 });
     }
