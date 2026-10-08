@@ -132,7 +132,7 @@ img{display:block;max-width:100%}
 .result-thumbs .rt-thumb img{width:100%;height:100%;object-fit:cover}
 .result-format-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .result-format-row label{font-size:13px;font-weight:600;color:#6a6a6a}
-.result-format-row select{padding:6px 12px;border-radius:8px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:13px;color:#2c2c2c;cursor:pointer;outline:none}
+.result-format-row select{padding:6px 12px;border-radius:8px;border:1.5px solid #e0dbd5;background:#faf8f6;font-size:13px;color:#2c2c2c;cursor:pointer;outline:none;-webkit-appearance:menulist;appearance:menulist;position:relative;z-index:2}
 .result-textarea{width:100%;border:1.5px solid #e0dbd5;border-radius:10px;background:#faf8f6;padding:12px;font-size:12px;color:#3a3a3a;line-height:1.6;resize:none;font-family:monospace;outline:none;box-sizing:border-box}
 .result-actions-row{display:flex;gap:10px;margin-top:12px;margin-bottom:12px}
 .result-copy-all{flex:1;padding:12px 0;border-radius:10px;background:#2c2c2c;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
@@ -1331,8 +1331,14 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
       <option value="url_ts">直链（时间戳）</option>
       <option value="url_short">直链（短链）</option>
       <option value="markdown">Markdown</option>
-      <option value="html">HTML 图片</option>
-      <option value="bbcode">BBCode</option>
+      <option value="html_img">HTML 图片</option>
+      <option value="html_full">HTML 原图 (带链接)</option>
+      <option value="html_medium">HTML 中等尺寸 (带链接)</option>
+      <option value="html_thumb">HTML 缩略图 (带链接)</option>
+      <option value="bb_img">BBCode 原图</option>
+      <option value="bb_full">BBCode 原图 (带链接)</option>
+      <option value="bb_medium">BBCode 中等尺寸 (带链接)</option>
+      <option value="bb_thumb">BBCode 缩略图 (带链接)</option>
     </select>
   </div>
   <textarea class="result-textarea" id="resultTextarea" readonly rows="4"></textarea>
@@ -3498,8 +3504,14 @@ function updateResultLinks(){
       case 'url_ts': return tsUrl;
       case 'url_short': return shortUrl;
       case 'markdown': return `![${r.name}](${url})`;
-      case 'html': return `<img src="${url}" alt="${r.name}">`;
-      case 'bbcode': return `[img]${url}[/img]`;
+      case 'html_img': return `<img src="${url}" alt="${r.name}">`;
+      case 'html_full': return `<a href="${url}"><img src="${url}" alt="${r.name}"></a>`;
+      case 'html_medium': return `<a href="${url}"><img src="${url}" alt="${r.name}" width="500"></a>`;
+      case 'html_thumb': return `<a href="${url}"><img src="${url}" alt="${r.name}" width="160"></a>`;
+      case 'bb_img': return `[img]${url}[/img]`;
+      case 'bb_full': return `[url=${url}][img]${url}[/img][/url]`;
+      case 'bb_medium': return `[url=${url}][img width=500]${url}[/img][/url]`;
+      case 'bb_thumb': return `[url=${url}][img width=160]${url}[/img][/url]`;
       default: return url;
     }
   });
@@ -4826,14 +4838,22 @@ function fcReplace(img){
       if(d.success){
         // Update local record
         img.size=file.size;
-        img.name=img.name; // keep original name
         saveUserImages();
-        // Force reload image by appending cache-buster
+        // Force reload image everywhere by appending cache-buster
         const bust='?t='+Date.now();
         const fcImgEl=document.getElementById('fcImg');
         if(fcImgEl&&fcImgEl.style.display!=='none')fcImgEl.src=img.src+bust;
         const backThumb=document.getElementById('fcBackThumb');
-        if(backThumb)backThumb.src=img.src+bust;
+        if(backThumb&&backThumb.src)backThumb.src=img.src+bust;
+        // Also update file icon if non-image
+        const ficon=document.getElementById('fcFileIcon');
+        if(ficon&&ficon.style.display!=='none'&&isImageFile(file.name||file.type)){
+          ficon.style.display='none';
+          fcImgEl.style.display='';fcImgEl.src=img.src+bust;
+          backThumb.src=img.src+bust;
+        }
+        // Refresh gallery thumbnails
+        document.querySelectorAll('img[src="'+img.src+'"]').forEach(el=>{el.src=img.src+bust;});
         showToast('文件已替换');
       }else{
         showToast(d.message||'替换失败');
