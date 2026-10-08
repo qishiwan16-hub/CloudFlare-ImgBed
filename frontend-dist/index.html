@@ -1679,6 +1679,17 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
       <svg class="pp-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
     </div>
 
+    <div class="pp-action" onclick="syncPushToServer()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="pp-action-text"><div class="pp-action-title">上传数据到服务器</div><div class="pp-action-hint">将本地图库/相册/收藏/配置推送到服务器</div></div>
+      <svg class="pp-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
+    <div class="pp-action" onclick="syncPullFromServer()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <div class="pp-action-text"><div class="pp-action-title">从服务器拉取数据</div><div class="pp-action-hint">用服务器数据覆盖本地（跨浏览器同步）</div></div>
+      <svg class="pp-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
+
     <div class="pp-action danger" onclick="authLogout()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       <div class="pp-action-text"><div class="pp-action-title">退出登录</div><div class="pp-action-hint">退出当前账号</div></div>
@@ -2287,6 +2298,56 @@ async function _syncPullAll(){
     }
     return true;
   }catch(e){console.warn('sync pull failed:',e);return false;}
+}
+// Manual push: upload all local data to server
+async function syncPushToServer(){
+  const user=authCurrentUser();
+  if(!user){showToast('请先登录');return;}
+  showToast('正在上传数据到服务器...');
+  try{
+    const batch={};
+    try{const s=localStorage.getItem(configKeyForUser(user.username));if(s)batch.config=JSON.parse(s);}catch{}
+    if(allImages&&allImages.length)batch.images=allImages;
+    if(typeof userAlbums!=='undefined'&&userAlbums&&userAlbums.length)batch.albums=userAlbums;
+    try{const s=localStorage.getItem(userKey('imgbed_favs'));if(s){const f=JSON.parse(s);if(f&&f.length)batch.favs=f;}}catch{}
+    try{const s=localStorage.getItem(userKey('imgbed_album_cats'));if(s){const c=JSON.parse(s);if(c&&c.length)batch.cats=c;}}catch{}
+    if(!Object.keys(batch).length){showToast('本地没有数据可上传');return;}
+    const resp=await fetch(API.userData,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({batch}),credentials:'include'});
+    const d=await resp.json();
+    if(d.success){
+      const items=[];
+      if(batch.images)items.push(batch.images.length+'张图片');
+      if(batch.albums)items.push(batch.albums.length+'个相册');
+      if(batch.favs)items.push(batch.favs.length+'个收藏');
+      if(batch.config)items.push('配置');
+      if(batch.cats)items.push('分类');
+      showToast('已上传: '+items.join(', '));
+    }else{
+      showToast('上传失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){showToast('上传失败: '+e.message);}
+}
+// Manual pull: download all server data to local
+async function syncPullFromServer(){
+  const user=authCurrentUser();
+  if(!user){showToast('请先登录');return;}
+  showToast('正在从服务器拉取数据...');
+  try{
+    const pulled=await _syncPullAll();
+    if(pulled){
+      applyConfig();
+      updateHomeStats();
+      renderHomeGallery(); renderHomeAlbums(); onAuthReady();
+      // Update profile page stats if open
+      try{openProfilePage();}catch{}
+      const items=[];
+      items.push(allImages.length+'张图片');
+      if(typeof userAlbums!=='undefined')items.push(userAlbums.length+'个相册');
+      showToast('已拉取: '+items.join(', '));
+    }else{
+      showToast('服务器暂无数据');
+    }
+  }catch(e){showToast('拉取失败: '+e.message);}
 }
 let config = { ...DEFAULT_CONFIG };
 let allImages = [];
