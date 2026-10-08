@@ -4851,15 +4851,18 @@ function fcReplace(img){
         const bust='?t='+Date.now();
         // Clean src without query params
         const cleanSrc=srcStr.split('?')[0];
-        // Update flip card front/back
-        const fcImgEl=document.getElementById('fcImg');
-        if(fcImgEl&&fcImgEl.style.display!=='none')fcImgEl.src=cleanSrc+bust;
-        const backThumb=document.getElementById('fcBackThumb');
-        if(backThumb)backThumb.src=cleanSrc+bust;
-        // Refresh all matching thumbnails in gallery
+        // Update the img object's src with bust to force reload
+        img.src=cleanSrc+bust;
+        // Save to server persistently
+        saveUserImages();
+        // Re-render flip card, gallery, albums
+        fcUpdate();
+        renderHomeGallery();
+        renderHomeAlbums();
+        // Also refresh any other img elements still showing old src
         document.querySelectorAll('img').forEach(el=>{
           const elSrc=(el.src||'').split('?')[0];
-          if(elSrc&&(elSrc===cleanSrc||elSrc.endsWith('/OvO/'+fileId)))el.src=cleanSrc+bust;
+          if(elSrc&&elSrc===cleanSrc)el.src=cleanSrc+bust;
         });
         showToast('文件已替换');
       }else{
