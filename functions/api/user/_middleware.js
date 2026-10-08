@@ -45,22 +45,15 @@ async function authentication(context) {
   context.data = context.data || {};
   context.data.authType = result.authType;
 
-  // Extract username: always prefer user_session's real username
+  // Username 统一从 user_session 获取（userLogin 登录时写入的真实账号名）
   const { validateSession } = await import('../../utils/auth/sessionManager.js');
-  let resolvedUsername = result.authType; // fallback
-
-  // Try user session first (has real username from userLogin)
   const userSessionResult = await validateSession(context.env, context.request, 'user');
   if (userSessionResult.valid && userSessionResult.session?.username) {
-    resolvedUsername = userSessionResult.session.username;
-  } else if (result.authType === 'admin') {
-    // If only admin session, try to get username from it
-    const adminSessionResult = await validateSession(context.env, context.request, 'admin');
-    if (adminSessionResult.valid && adminSessionResult.session?.username) {
-      resolvedUsername = adminSessionResult.session.username;
-    }
+    context.data.username = userSessionResult.session.username;
+  } else {
+    // 没有 user_session → 无法确定用户身份，拒绝访问用户数据
+    return new Response('Unauthorized: please login with username', { status: 401 });
   }
-  context.data.username = resolvedUsername;
 
   return context.next();
 }
