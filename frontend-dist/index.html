@@ -1261,6 +1261,11 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
             <div class="bki-text"><div class="bki-label">移动到相册</div><div class="bki-hint">归类到指定图册</div></div>
             <div class="bki-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>
           </button>
+          <button class="fc-bk-item" onclick="fcAction('replace')">
+            <div class="bki-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+            <div class="bki-text"><div class="bki-label">替换文件</div><div class="bki-hint">保留链接，替换内容</div></div>
+            <div class="bki-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>
+          </button>
           <button class="fc-bk-item danger" onclick="fcAction('delete')">
             <div class="bki-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></div>
             <div class="bki-text"><div class="bki-label">删除图片</div><div class="bki-hint">删除后不可恢复</div></div>
@@ -4801,7 +4806,41 @@ function fcAction(action){
   if(action==='rename') fcRename(img);
   else if(action==='edit') fcEditInfo(img);
   else if(action==='move') fcMoveToAlbum(img);
+  else if(action==='replace') fcReplace(img);
   else if(action==='delete') fcDelete(img);
+}
+function fcReplace(img){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='*/*';
+  inp.onchange=async()=>{
+    const file=inp.files[0];
+    if(!file)return;
+    const fname=img.src.split('/').pop();
+    if(!fname){showToast('无法获取文件路径');return;}
+    showToast('正在替换...');
+    try{
+      const fd=new FormData();
+      fd.append('file',file);
+      const r=await fetch('/api/manage/replace/'+encodeURIComponent(fname),{method:'POST',credentials:'include',body:fd});
+      const d=await r.json();
+      if(d.success){
+        // Update local record
+        img.size=file.size;
+        img.name=img.name; // keep original name
+        saveUserImages();
+        // Force reload image by appending cache-buster
+        const bust='?t='+Date.now();
+        const fcImgEl=document.getElementById('fcImg');
+        if(fcImgEl&&fcImgEl.style.display!=='none')fcImgEl.src=img.src+bust;
+        const backThumb=document.getElementById('fcBackThumb');
+        if(backThumb)backThumb.src=img.src+bust;
+        showToast('文件已替换');
+      }else{
+        showToast(d.message||'替换失败');
+      }
+    }catch(e){showToast('替换失败: '+e.message);}
+  };
+  inp.click();
 }
 
 // ========= COPY FORMAT PANEL =========
