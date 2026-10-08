@@ -1873,17 +1873,15 @@ async function authLogin(){
     const user=d.user;
     authSetSession(user);
     document.getElementById('authOverlay').classList.remove('show');
-    // Server-first: pull all data from server before rendering
-    loadServerConfig();
-    const pulled=await _syncPullAll();
-    if(!pulled){
-      // Server has no data yet — load localStorage as fallback, then push to server
-      loadConfig(); loadUserImages(); loadUserAlbums();
-    }
-    applyConfig(); initTheme();
+    // Load local data first for instant render
+    loadConfig(); applyConfig(); initTheme();
+    loadUserImages(); loadUserAlbums();
     updateHomeStats();
     renderHomeGallery(); renderHomeAlbums();
     onAuthReady();
+    loadServerConfig();
+    // Show sync dialog
+    _showSyncDialog();
   }catch(e){showAuthMsg('error','网络错误，请重试');}
 }
 
@@ -1919,21 +1917,15 @@ function authCheckLogin(){
   }
   // Verify session is still valid on server
   _verifySession(user);
-  // Load localStorage first for instant render, then server overwrites
+  // Load local data (localStorage only, no auto sync)
   loadConfig(); applyConfig(); initTheme();
   loadUserImages(); loadUserAlbums();
   updateHomeStats();
   renderHomeGallery(); renderHomeAlbums();
   onAuthReady();
   loadServerConfig();
-  _syncPullAll().then(pulled=>{
-    if(pulled){
-      applyConfig();
-      updateHomeStats();
-      renderHomeGallery(); renderHomeAlbums(); onAuthReady();
-    }
-    // Do NOT push local to server if pull fails — prevents overwriting good server data
-  });
+  // Show sync dialog on every page load
+  _showSyncDialog();
   return true;
 }
 async function _verifySession(user){
@@ -2259,91 +2251,147 @@ async function adminResetPw(uname){
 const DEFAULT_CONFIG = { name:'我的图床', bio:'把喜欢的瞬间，留在这里。', avatar:'/static/media/logo.png', cover:'/img/background-light.f17603bc.jpg', galleryCount:6, avatarShape:'circle', theme:'auto' };
 const API = { upload:'/upload', list:'/api/manage/list', fileBase:'/OvO/', userData:'/api/user/data' };
 
-// ===== SERVER SYNC ENGINE =====
-// Immediate server sync — every save goes to server right away
-let _syncQueue=Promise.resolve();
-function _syncToServer(type, data){
-  // Chain requests to avoid race conditions
-  _syncQueue=_syncQueue.then(()=>fetch(API.userData,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type,data}),credentials:'include'})).catch(e=>console.warn('sync push failed:',type,e));
+// ===== SERVER SYNC ENGINE (MANUAL ONLY) =====
+// No automatic sync — user controls when to push/pull via profile page buttons
+// Server push: called only by manual "上传到服务器" button
+async function _syncPushAllManual(){
+  const user=authCurrentUser();
+  if(!user)return false;
+  const batch={};
+  if(allImages&&allImages.length)batch.images=allImages;
+  if(typeof userAlbums!=='undefined'&&userAlbums&&userAlbums.length)batch.albums=userAlbums;
+  try{const s=localStorage.getItem(configKeyForUser(user.username));if(s)batch.config=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem(userKey('imgbed_favs'));if(s){const f=JSON.parse(s);if(f&&f.length)batch.favs=f;}}catch{}
+  try{const s=localStorage.getItem(userKey('imgbed_album_cats'));if(s){const c=JSON.parse(s);if(c&&c.length)batch.cats=c;}}catch{}
+  if(!Object.keys(batch).length)return false;
+  const resp=await fetch(API.userData,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({batch}),credentials:'include'});
+  const d=await resp.json();
+  return d.success;
 }
-// Pull all data from server → always overwrite local
-async function _syncPullAll(){
+// Server pull: called by manual "从服务器拉取" button or sync dialog
+async function _syncPullAllManual(){
+  const resp=await fetch(API.userData+'?type=all',{credentials:'include'});
+  if(!resp.ok)return null;
+  const json=await resp.json();
+  if(!json.success)return null;
+  return json.data;
+}
+// Apply server data to local
+function _applyServerData(d){
+  const user=authCurrentUser();
+  if(!user||!d)return;
+  if(d.config){
+    localStorage.setItem(configKeyForUser(user.username),JSON.stringify(d.config));
+    config={...DEFAULT_CONFIG,...d.config};
+  }
+  if(d.images&&Array.isArray(d.images)){
+    allImages=d.images;
+    localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));
+  }
+  if(d.albums&&Array.isArray(d.albums)){
+    userAlbums=d.albums;
+    localStorage.setItem(userKey('imgbed_albums'),JSON.stringify(userAlbums));
+  }
+  if(d.favs) localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(d.favs));
+  if(d.cats) localStorage.setItem(userKey('imgbed_album_cats'),JSON.stringify(d.cats));
+}
+function _refreshAllUI(){
+  applyConfig(); updateHomeStats(); renderHomeGallery(); renderHomeAlbums(); onAuthReady();
+}
+// Sync dialog — shown on login/page load
+async function _showSyncDialog(){
+  // Fetch server stats
+  let srvImgs=0,srvAlbs=0,hasServer=false;
   try{
-    const resp=await fetch(API.userData+'?type=all',{credentials:'include'});
-    if(!resp.ok)return false;
-    const json=await resp.json();
-    if(!json.success)return false;
-    const d=json.data;
-    const user=authCurrentUser();
-    if(!user)return false;
-    // Always overwrite with server data (even empty arrays)
-    if(d.config){
-      const key=configKeyForUser(user.username);
-      localStorage.setItem(key,JSON.stringify(d.config));
-      config={...DEFAULT_CONFIG,...d.config};
+    const d=await _syncPullAllManual();
+    if(d){
+      srvImgs=d.images&&Array.isArray(d.images)?d.images.length:0;
+      srvAlbs=d.albums&&Array.isArray(d.albums)?d.albums.length:0;
+      hasServer=!!(srvImgs||srvAlbs||d.config||d.favs||d.cats);
+      // Stash for quick apply
+      window._syncServerData=d;
     }
-    if(d.images&&Array.isArray(d.images)){
-      localStorage.setItem(userKey('imgbed_images'),JSON.stringify(d.images));
-      allImages=d.images;
-    }
-    if(d.albums&&Array.isArray(d.albums)){
-      localStorage.setItem(userKey('imgbed_albums'),JSON.stringify(d.albums));
-      userAlbums=d.albums;
-    }
-    if(d.favs){
-      localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(d.favs));
-    }
-    if(d.cats){
-      localStorage.setItem(userKey('imgbed_album_cats'),JSON.stringify(d.cats));
-    }
-    return true;
-  }catch(e){console.warn('sync pull failed:',e);return false;}
+  }catch{}
+  const localImgs=allImages.length;
+  const localAlbs=typeof userAlbums!=='undefined'?userAlbums.length:0;
+  // If both are same, skip dialog
+  if(localImgs===srvImgs&&localAlbs===srvAlbs&&localImgs>0){window._syncServerData=null;return;}
+  // Build dialog
+  const ov=document.createElement('div');
+  ov.id='syncDialog';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <div style="font-size:18px;font-weight:700;margin-bottom:16px;text-align:center">📦 数据同步</div>
+    <div style="font-size:14px;color:#666;margin-bottom:20px;line-height:1.6">
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f5f5f5;border-radius:8px;margin-bottom:8px">
+        <span>📱 本地数据</span><span><b>${localImgs}</b> 张图片, <b>${localAlbs}</b> 个相册</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f0f7ff;border-radius:8px">
+        <span>☁️ 服务器数据</span><span><b>${srvImgs}</b> 张图片, <b>${srvAlbs}</b> 个相册</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${hasServer?`<button onclick="_syncApplyServer()" style="padding:12px;border:none;border-radius:10px;background:#1a73e8;color:#fff;font-size:15px;font-weight:600;cursor:pointer">⬇️ 使用服务器数据 (${srvImgs}张图片)</button>`:''}
+      <button onclick="_syncApplyLocal()" style="padding:12px;border:none;border-radius:10px;background:#34a853;color:#fff;font-size:15px;font-weight:600;cursor:pointer">⬆️ 上传本地数据到服务器 (${localImgs}张图片)</button>
+      <button onclick="_syncDismiss()" style="padding:10px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#666;font-size:14px;cursor:pointer">暂不同步</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
 }
-// Manual push: upload all local data to server
+function _syncDismiss(){
+  const el=document.getElementById('syncDialog');
+  if(el)el.remove();
+  window._syncServerData=null;
+}
+async function _syncApplyServer(){
+  const d=window._syncServerData;
+  if(d){
+    _applyServerData(d);
+    _refreshAllUI();
+    showToast('已使用服务器数据');
+  }
+  _syncDismiss();
+}
+async function _syncApplyLocal(){
+  _syncDismiss();
+  showToast('正在上传本地数据...');
+  try{
+    const ok=await _syncPushAllManual();
+    showToast(ok?'已上传本地数据到服务器':'上传失败');
+  }catch(e){showToast('上传失败: '+e.message);}
+}
+// Manual push button
 async function syncPushToServer(){
   const user=authCurrentUser();
   if(!user){showToast('请先登录');return;}
   showToast('正在上传数据到服务器...');
   try{
-    const batch={};
-    try{const s=localStorage.getItem(configKeyForUser(user.username));if(s)batch.config=JSON.parse(s);}catch{}
-    if(allImages&&allImages.length)batch.images=allImages;
-    if(typeof userAlbums!=='undefined'&&userAlbums&&userAlbums.length)batch.albums=userAlbums;
-    try{const s=localStorage.getItem(userKey('imgbed_favs'));if(s){const f=JSON.parse(s);if(f&&f.length)batch.favs=f;}}catch{}
-    try{const s=localStorage.getItem(userKey('imgbed_album_cats'));if(s){const c=JSON.parse(s);if(c&&c.length)batch.cats=c;}}catch{}
-    if(!Object.keys(batch).length){showToast('本地没有数据可上传');return;}
-    const resp=await fetch(API.userData,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({batch}),credentials:'include'});
-    const d=await resp.json();
-    if(d.success){
+    const ok=await _syncPushAllManual();
+    if(ok){
       const items=[];
-      if(batch.images)items.push(batch.images.length+'张图片');
-      if(batch.albums)items.push(batch.albums.length+'个相册');
-      if(batch.favs)items.push(batch.favs.length+'个收藏');
-      if(batch.config)items.push('配置');
-      if(batch.cats)items.push('分类');
+      if(allImages.length)items.push(allImages.length+'张图片');
+      if(typeof userAlbums!=='undefined'&&userAlbums.length)items.push(userAlbums.length+'个相册');
+      items.push('配置');
       showToast('已上传: '+items.join(', '));
     }else{
-      showToast('上传失败: '+(d.error||'未知错误'));
+      showToast('上传失败');
     }
   }catch(e){showToast('上传失败: '+e.message);}
 }
-// Manual pull: download all server data to local
+// Manual pull button
 async function syncPullFromServer(){
   const user=authCurrentUser();
   if(!user){showToast('请先登录');return;}
   showToast('正在从服务器拉取数据...');
   try{
-    const pulled=await _syncPullAll();
-    if(pulled){
-      applyConfig();
-      updateHomeStats();
-      renderHomeGallery(); renderHomeAlbums(); onAuthReady();
-      // Update profile page stats if open
+    const d=await _syncPullAllManual();
+    if(d){
+      _applyServerData(d);
+      _refreshAllUI();
       try{openProfilePage();}catch{}
-      const items=[];
-      items.push(allImages.length+'张图片');
-      if(typeof userAlbums!=='undefined')items.push(userAlbums.length+'个相册');
-      showToast('已拉取: '+items.join(', '));
+      const srvImgs=d.images?d.images.length:0;
+      const srvAlbs=d.albums?d.albums.length:0;
+      showToast('已拉取: '+srvImgs+'张图片, '+srvAlbs+'个相册');
     }else{
       showToast('服务器暂无数据');
     }
@@ -2384,7 +2432,6 @@ function saveConfig(){
   const user=authCurrentUser();
   const key=user?configKeyForUser(user.username):'imgbed_config';
   localStorage.setItem(key, JSON.stringify(config));
-  _syncToServer('config', config);
 }
 function getUserConfig(username){
   try{const s=localStorage.getItem(configKeyForUser(username));if(s)return{...DEFAULT_CONFIG,...JSON.parse(s)};}catch{}
@@ -3628,7 +3675,7 @@ async function reloadImagesFromServer(){
   }catch(e){console.warn('reloadImagesFromServer:',e);}
   return false;
 }
-function saveUserImages(){localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));_syncToServer('images',allImages);}
+function saveUserImages(){localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));}
 function loadGalleryDemo(){
   loadUserImages();
   updateHomeStats();
@@ -3668,7 +3715,7 @@ function loadUserAlbums(){
   });
   if(migrated) saveUserAlbums();
 }
-function saveUserAlbums(){ localStorage.setItem(userKey('imgbed_albums'), JSON.stringify(userAlbums)); _syncToServer('albums',userAlbums); }
+function saveUserAlbums(){ localStorage.setItem(userKey('imgbed_albums'), JSON.stringify(userAlbums)); }
 
 function renderHomeAlbums(){
   loadUserAlbums();
@@ -3874,7 +3921,6 @@ function getAlbumCategories(){
 }
 function saveAlbumCategories(cats){
   localStorage.setItem(userKey('imgbed_album_cats'),JSON.stringify(cats));
-  _syncToServer('cats',cats);
 }
 function addCustomCategory(name){
   const cats=getAlbumCategories();
@@ -4240,7 +4286,7 @@ function switchApTab(idx){
 
 // Favorites stored per image src
 function loadFavorites(){try{return JSON.parse(localStorage.getItem(userKey('imgbed_favs'))||'[]');}catch(e){return[];}}
-function saveFavorites(favs){localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(favs));_syncToServer('favs',favs);}
+function saveFavorites(favs){localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(favs));}
 function toggleFav(src){
   let favs=loadFavorites();
   if(favs.includes(src)) favs=favs.filter(f=>f!==src);
