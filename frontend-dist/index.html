@@ -4827,48 +4827,69 @@ function fcReplace(img){
   inp.onchange=async()=>{
     const file=inp.files[0];
     if(!file)return;
-    // Extract fileId: everything after /OvO/ from img.src
-    let fileId='';
+    // Extract old fileId from img.src
+    let oldFileId='';
     const srcStr=img.src||'';
     const ovoIdx=srcStr.indexOf('/OvO/');
-    if(ovoIdx>=0){
-      fileId=srcStr.substring(ovoIdx+5);
-    }else{
-      // fallback: last segment
-      fileId=srcStr.split('/').pop();
-    }
-    // Remove any query string
-    fileId=fileId.split('?')[0];
-    if(!fileId){showToast('无法获取文件路径');return;}
-    showToast('正在替换...');
+    if(ovoIdx>=0) oldFileId=srcStr.substring(ovoIdx+5).split('?')[0];
+    else oldFileId=srcStr.split('/').pop().split('?')[0];
+    if(!oldFileId){showToast('无法获取文件路径');return;}
+
+    showToast('正在上传新文件...');
     try{
+      // Step 1: Upload new file via /upload (reuse existing upload flow)
       const fd=new FormData();
       fd.append('file',file);
-      const r=await fetch('/api/manage/replace/'+fileId,{method:'POST',credentials:'include',body:fd});
-      const d=await r.json();
-      console.log('Replace response:',JSON.stringify(d));
-      if(d.success){
-        // Force reload image everywhere by appending cache-buster
-        const bust='?t='+Date.now();
-        // Clean src without query params
-        const cleanSrc=srcStr.split('?')[0];
-        // DO NOT modify img.src (would corrupt saved data with ?t=)
-        // Re-render flip card, gallery, albums with cache-busting on DOM only
-        fcUpdate();
-        renderHomeGallery();
-        renderHomeAlbums();
-        // After rendering, bust cache on all matching img elements
-        setTimeout(()=>{
-          document.querySelectorAll('img').forEach(el=>{
-            const elSrc=(el.getAttribute('src')||'').split('?')[0];
-            if(elSrc&&elSrc===cleanSrc)el.src=cleanSrc+bust;
-          });
-        },100);
-        showToast('文件已替换');
-      }else{
-        showToast(d.message||'替换失败'+(d.debug?' ['+JSON.stringify(d.debug)+']':''));
+      const uploadResp=await fetch(API.upload,{method:'POST',credentials:'include',body:fd});
+      const uploadData=await uploadResp.json();
+      console.log('Replace step1 upload:',JSON.stringify(uploadData));
+      if(!uploadData||!uploadData[0]||!uploadData[0].src){
+        showToast('上传新文件失败');return;
       }
-    }catch(e){showToast('替换失败: '+e.message);}
+      // Extract newFileId from src: "/OvO/xxx" → "xxx"
+      const newSrc=uploadData[0].src;
+      let newFileId='';
+      const newOvoIdx=newSrc.indexOf('/OvO/');
+      if(newOvoIdx>=0) newFileId=newSrc.substring(newOvoIdx+5);
+      else newFileId=newSrc.split('/').pop();
+      if(!newFileId){showToast('无法获取新文件ID');return;}
+
+      // Step 2: Swap storage pointers
+      showToast('正在替换...');
+      const swapResp=await fetch('/api/manage/replace/'+oldFileId,{
+        method:'POST',credentials:'include',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({newFileId})
+      });
+      const swapData=await swapResp.json();
+      console.log('Replace step2 swap:',JSON.stringify(swapData));
+      if(!swapData.success){
+        showToast(swapData.message||'替换失败');return;
+      }
+
+      // Step 3: Remove the newly uploaded file from allImages (it was a temp upload)
+      const newFullUrl=newSrc.startsWith('http')?newSrc:location.origin+newSrc;
+      allImages=allImages.filter(i=>i.src!==newSrc&&i.src!==newFullUrl);
+
+      // Step 4: Refresh UI
+      const cleanSrc=srcStr.split('?')[0];
+      const bust='?t='+Date.now();
+      // Update flip card
+      fcUpdate();
+      renderHomeGallery();
+      renderHomeAlbums();
+      // After DOM render, bust cache on all matching imgs
+      setTimeout(()=>{
+        document.querySelectorAll('img').forEach(el=>{
+          const elSrc=(el.getAttribute('src')||'').split('?')[0];
+          if(elSrc&&(elSrc===cleanSrc||elSrc.endsWith('/OvO/'+oldFileId)))el.src=elSrc+bust;
+        });
+      },100);
+      showToast('文件已替换');
+    }catch(e){
+      console.error('Replace error:',e);
+      showToast('替换失败: '+e.message);
+    }
   };
   inp.click();
 }
