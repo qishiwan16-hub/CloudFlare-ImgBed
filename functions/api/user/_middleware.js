@@ -45,10 +45,22 @@ async function authentication(context) {
   context.data = context.data || {};
   context.data.authType = result.authType;
 
-  // Extract username from session cookie for per-user data isolation
+  // Extract username: always prefer user_session's real username
   const { validateSession } = await import('../../utils/auth/sessionManager.js');
-  const sessionResult = await validateSession(context.env, context.request, result.authType);
-  context.data.username = sessionResult.valid ? (sessionResult.session?.username || result.authType) : result.authType;
+  let resolvedUsername = result.authType; // fallback
+
+  // Try user session first (has real username from userLogin)
+  const userSessionResult = await validateSession(context.env, context.request, 'user');
+  if (userSessionResult.valid && userSessionResult.session?.username) {
+    resolvedUsername = userSessionResult.session.username;
+  } else if (result.authType === 'admin') {
+    // If only admin session, try to get username from it
+    const adminSessionResult = await validateSession(context.env, context.request, 'admin');
+    if (adminSessionResult.valid && adminSessionResult.session?.username) {
+      resolvedUsername = adminSessionResult.session.username;
+    }
+  }
+  context.data.username = resolvedUsername;
 
   return context.next();
 }

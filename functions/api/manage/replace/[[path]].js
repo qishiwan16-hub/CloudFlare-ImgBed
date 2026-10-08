@@ -134,14 +134,28 @@ export async function onRequestPost(context) {
             const url = new URL(request.url);
             const origin = url.origin;
             const urlsToPurge = [`${origin}/OvO/${resolvedOldId}`];
+            // New-style alias fields
             if (oldMeta.AliasTimestamp) urlsToPurge.push(`${origin}/OvO/${oldMeta.AliasTimestamp}`);
             if (oldMeta.AliasShort) urlsToPurge.push(`${origin}/OvO/${oldMeta.AliasShort}`);
-
-            const cache = caches.default;
-            const nullResp = () => new Response(null, { headers: { 'Cache-Control': 'max-age=0' } });
-            for (const u of urlsToPurge) {
-                try { await cache.put(u, nullResp()); purged.push(u); } catch {}
+            // Old-style: TimeStamp field (raw number) — alias might be stored as "<timestamp>.<ext>"
+            if (oldMeta.TimeStamp && !oldMeta.AliasTimestamp) {
+                const ext = resolvedOldId.split('.').pop() || '';
+                if (ext) urlsToPurge.push(`${origin}/OvO/${oldMeta.TimeStamp}.${ext}`);
+                urlsToPurge.push(`${origin}/OvO/${oldMeta.TimeStamp}`);
             }
+
+            // Workers Cache API — purge current datacenter
+            const cache = caches.default;
+            for (const u of urlsToPurge) {
+                try {
+                    // Delete existing cache entry
+                    await cache.delete(new Request(u));
+                    // Also put empty response to ensure stale cache is overwritten
+                    await cache.put(new Request(u), new Response(null, { headers: { 'Cache-Control': 'max-age=0' } }));
+                    purged.push(u);
+                } catch {}
+            }
+            // Zone API — purge all edge datacenters
             for (const u of urlsToPurge) {
                 try { await purgeCFCache(env, u); } catch {}
             }
