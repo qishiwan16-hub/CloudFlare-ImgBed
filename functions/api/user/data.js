@@ -28,25 +28,9 @@ export async function onRequestGet(context) {
     if (type === 'all') {
       // Return all user data types at once
       const result = {};
-      let hasAnyData = false;
       for (const t of VALID_TYPES) {
         const val = await db.get(dataKey(username, t));
         try { result[t] = val ? JSON.parse(val) : null; } catch { result[t] = null; }
-        if (result[t]) hasAnyData = true;
-      }
-      // Fallback: if no data found for this username, try legacy key 'user'
-      if (!hasAnyData && username !== 'user' && username !== 'admin') {
-        for (const t of VALID_TYPES) {
-          const legacyVal = await db.get(dataKey('user', t));
-          try { result[t] = legacyVal ? JSON.parse(legacyVal) : null; } catch { result[t] = null; }
-          if (result[t]) hasAnyData = true;
-        }
-        // If legacy data found, migrate it to the new username key
-        if (hasAnyData) {
-          for (const t of VALID_TYPES) {
-            if (result[t]) await db.put(dataKey(username, t), JSON.stringify(result[t]));
-          }
-        }
       }
       return new Response(JSON.stringify({ success: true, data: result }), {
         headers: { 'Content-Type': 'application/json' }

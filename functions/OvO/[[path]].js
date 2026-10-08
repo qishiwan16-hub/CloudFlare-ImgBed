@@ -73,7 +73,7 @@ export async function onRequest(context) {  // Contents of context object
     const db = getDatabase(env);
     let imgRecord = await db.getWithMetadata(fileId);
     if (!imgRecord) {
-        return new Response('Error: Image Not Found', { status: 404 });
+        return returnDeletedPage(url);
     }
 
     // 别名解析：如果是别名记录，跳转到主文件
@@ -81,7 +81,7 @@ export async function onRequest(context) {  // Contents of context object
         const targetId = imgRecord.metadata.target;
         imgRecord = await db.getWithMetadata(targetId);
         if (!imgRecord) {
-            return new Response('Error: Image Not Found (alias target missing)', { status: 404 });
+            return returnDeletedPage(url);
         }
         fileId = targetId;
     }
@@ -1123,4 +1123,29 @@ function getWebDAVPublicFileUrl(webdavCredentials, filePath) {
     }
 
     return '';
+}
+
+// 返回「图片已删除」页面
+async function returnDeletedPage(url) {
+    try {
+        const page = await fetch(url.origin + '/deleted.html');
+        if (page.ok) {
+            return new Response(page.body, {
+                status: 410,
+                headers: {
+                    'Content-Type': 'text/html; charset=utf-8',
+                    'Cache-Control': 'public, max-age=86400',
+                },
+            });
+        }
+    } catch (e) {
+        // fallback
+    }
+    return new Response('Image has been deleted / 该图片已被删除', {
+        status: 410,
+        headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'public, max-age=86400',
+        },
+    });
 }
