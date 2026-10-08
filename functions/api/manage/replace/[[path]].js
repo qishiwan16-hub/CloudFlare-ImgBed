@@ -27,9 +27,19 @@ export async function onRequestPost(context) {
     }
 
     const db = getDatabase(env);
-    const record = await db.getWithMetadata(fileId);
+    let record = await db.getWithMetadata(fileId);
     if (!record || !record.metadata) {
         return Response.json({ success: false, message: '文件不存在' }, { status: 404 });
+    }
+
+    // Alias resolution: follow alias to primary file
+    if (record.metadata.isAlias && record.metadata.target) {
+        const targetId = record.metadata.target;
+        record = await db.getWithMetadata(targetId);
+        if (!record || !record.metadata) {
+            return Response.json({ success: false, message: '主文件不存在' }, { status: 404 });
+        }
+        fileId = targetId;
     }
 
     const meta = record.metadata;
@@ -125,12 +135,8 @@ async function replaceTelegram(db, env, meta, fileId, file) {
     const response = await tg.sendFile(file, creds.chatId, 'sendDocument', 'document');
     const fileInfo = tg.getFileInfo(response);
 
-    // Update metadata with new file_id
+    // Update metadata in-place with new file_id (main handler will save)
     meta.TgFileId = fileInfo.file_id;
-    meta.FileSize = (fileInfo.file_size / 1024 / 1024).toFixed(2);
-
-    // Telegram KV value is always empty string
-    await db.put(fileId, '', { metadata: meta });
 }
 
 async function replaceHuggingFace(db, env, meta, fileId, file) {

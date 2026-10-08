@@ -4827,33 +4827,40 @@ function fcReplace(img){
   inp.onchange=async()=>{
     const file=inp.files[0];
     if(!file)return;
-    const fname=img.src.split('/').pop();
-    if(!fname){showToast('无法获取文件路径');return;}
+    // Extract fileId: everything after /OvO/ from img.src
+    let fileId='';
+    const srcStr=img.src||'';
+    const ovoIdx=srcStr.indexOf('/OvO/');
+    if(ovoIdx>=0){
+      fileId=srcStr.substring(ovoIdx+5);
+    }else{
+      // fallback: last segment
+      fileId=srcStr.split('/').pop();
+    }
+    // Remove any query string
+    fileId=fileId.split('?')[0];
+    if(!fileId){showToast('无法获取文件路径');return;}
     showToast('正在替换...');
     try{
       const fd=new FormData();
       fd.append('file',file);
-      const r=await fetch('/api/manage/replace/'+encodeURIComponent(fname),{method:'POST',credentials:'include',body:fd});
+      const r=await fetch('/api/manage/replace/'+fileId,{method:'POST',credentials:'include',body:fd});
       const d=await r.json();
       if(d.success){
-        // Update local record
-        img.size=file.size;
-        saveUserImages();
         // Force reload image everywhere by appending cache-buster
         const bust='?t='+Date.now();
+        // Clean src without query params
+        const cleanSrc=srcStr.split('?')[0];
+        // Update flip card front/back
         const fcImgEl=document.getElementById('fcImg');
-        if(fcImgEl&&fcImgEl.style.display!=='none')fcImgEl.src=img.src+bust;
+        if(fcImgEl&&fcImgEl.style.display!=='none')fcImgEl.src=cleanSrc+bust;
         const backThumb=document.getElementById('fcBackThumb');
-        if(backThumb&&backThumb.src)backThumb.src=img.src+bust;
-        // Also update file icon if non-image
-        const ficon=document.getElementById('fcFileIcon');
-        if(ficon&&ficon.style.display!=='none'&&isImageFile(file.name||file.type)){
-          ficon.style.display='none';
-          fcImgEl.style.display='';fcImgEl.src=img.src+bust;
-          backThumb.src=img.src+bust;
-        }
-        // Refresh gallery thumbnails
-        document.querySelectorAll('img[src="'+img.src+'"]').forEach(el=>{el.src=img.src+bust;});
+        if(backThumb)backThumb.src=cleanSrc+bust;
+        // Refresh all matching thumbnails in gallery
+        document.querySelectorAll('img').forEach(el=>{
+          const elSrc=(el.src||'').split('?')[0];
+          if(elSrc&&(elSrc===cleanSrc||elSrc.endsWith('/OvO/'+fileId)))el.src=cleanSrc+bust;
+        });
         showToast('文件已替换');
       }else{
         showToast(d.message||'替换失败');
