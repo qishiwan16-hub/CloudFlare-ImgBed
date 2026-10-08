@@ -4846,6 +4846,7 @@ function fcReplace(img){
       fd.append('file',file);
       const r=await fetch('/api/manage/replace/'+fileId,{method:'POST',credentials:'include',body:fd});
       const d=await r.json();
+      console.log('Replace response:',JSON.stringify(d));
       if(d.success){
         // Force reload image everywhere by appending cache-buster
         const bust='?t='+Date.now();
@@ -4865,7 +4866,7 @@ function fcReplace(img){
         },100);
         showToast('文件已替换');
       }else{
-        showToast(d.message||'替换失败');
+        showToast(d.message||'替换失败'+(d.debug?' ['+JSON.stringify(d.debug)+']':''));
       }
     }catch(e){showToast('替换失败: '+e.message);}
   };
