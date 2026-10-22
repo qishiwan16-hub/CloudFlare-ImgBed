@@ -1,5 +1,5 @@
-import { authenticate, AUTH_SCOPE } from "../../utils/auth/authCore.js";
-import { validateSession } from '../../utils/auth/sessionManager.js';
+import { authenticate, AUTH_SCOPE } from "../utils/auth/authCore.js";
+import { validateSession } from '../utils/auth/sessionManager.js';
 import { checkDatabaseConfig } from '../utils/middleware';
 
 const DEFAULT_CACHE_CONTROL = 'private, no-store, max-age=0';
