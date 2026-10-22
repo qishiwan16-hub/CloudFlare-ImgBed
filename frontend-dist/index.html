@@ -1690,6 +1690,18 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
       <svg class="pp-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
     </div>
 
+    <div class="pp-action" onclick="exportUserData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <div class="pp-action-text"><div class="pp-action-title">导出数据</div><div class="pp-action-hint">将图库/相册/收藏/配置导出为 JSON 文件</div></div>
+      <svg class="pp-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
+    <div class="pp-action" onclick="importUserData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="pp-action-text"><div class="pp-action-title">导入数据</div><div class="pp-action-hint">从 JSON 文件恢复图库/相册/收藏/配置</div></div>
+      <svg class="pp-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
+    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImportFile(event)">
+
     <div class="pp-action danger" onclick="authLogout()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       <div class="pp-action-text"><div class="pp-action-title">退出登录</div><div class="pp-action-hint">退出当前账号</div></div>
@@ -2327,6 +2339,59 @@ async function syncPullFromServer(){
       showToast('已拉取: '+allImages.length+'张图片, '+(typeof userAlbums!=='undefined'?userAlbums.length:0)+'个相册');
     }else showToast('服务器暂无数据');
   }catch(e){showToast('拉取失败: '+e.message);}
+}
+
+// ===== EXPORT / IMPORT =====
+function exportUserData(){
+  const user=authCurrentUser();
+  if(!user){showToast('请先登录');return;}
+  const data={_export:'imgbed',_version:1,_user:user.username,_date:new Date().toISOString()};
+  try{const s=localStorage.getItem(configKeyForUser(user.username));if(s)data.config=JSON.parse(s);}catch{}
+  if(allImages&&allImages.length)data.images=allImages;
+  if(typeof userAlbums!=='undefined'&&userAlbums&&userAlbums.length)data.albums=userAlbums;
+  try{const s=localStorage.getItem(userKey('imgbed_favs'));if(s){const f=JSON.parse(s);if(f&&f.length)data.favs=f;}}catch{}
+  try{const s=localStorage.getItem(userKey('imgbed_album_cats'));if(s){const c=JSON.parse(s);if(c&&c.length)data.cats=c;}}catch{}
+  const json=JSON.stringify(data,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='imgbed-backup-'+user.username+'-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('数据已导出');
+}
+function importUserData(){
+  document.getElementById('importFileInput').click();
+}
+function handleImportFile(e){
+  const file=e.target.files[0];
+  if(!file){return;}
+  const user=authCurrentUser();
+  if(!user){showToast('请先登录');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data._export||data._export!=='imgbed'){showToast('无效的备份文件');return;}
+      let items=[];
+      if(data.config){localStorage.setItem(configKeyForUser(user.username),JSON.stringify(data.config));config={...DEFAULT_CONFIG,...data.config};items.push('配置');}
+      if(data.images&&Array.isArray(data.images)){allImages=data.images;localStorage.setItem(userKey('imgbed_images'),JSON.stringify(allImages));items.push(data.images.length+'张图片');}
+      if(data.albums&&Array.isArray(data.albums)){userAlbums=data.albums;localStorage.setItem(userKey('imgbed_albums'),JSON.stringify(userAlbums));items.push(data.albums.length+'个相册');}
+      if(data.favs&&Array.isArray(data.favs)){localStorage.setItem(userKey('imgbed_favs'),JSON.stringify(data.favs));items.push(data.favs.length+'个收藏');}
+      if(data.cats&&Array.isArray(data.cats)){localStorage.setItem(userKey('imgbed_album_cats'),JSON.stringify(data.cats));items.push('分类');}
+      applyConfig();updateHomeStats();renderHomeGallery();renderHomeAlbums();onAuthReady();
+      // Auto sync to server after import
+      _syncToServer('images',allImages);
+      _syncToServer('albums',userAlbums||[]);
+      try{_syncToServer('config',config);}catch{}
+      try{const f=JSON.parse(localStorage.getItem(userKey('imgbed_favs'))||'[]');if(f.length)_syncToServer('favs',f);}catch{}
+      try{const c=JSON.parse(localStorage.getItem(userKey('imgbed_album_cats'))||'[]');if(c.length)_syncToServer('cats',c);}catch{}
+      showToast('已导入: '+items.join(', '));
+    }catch(err){showToast('导入失败: 文件格式错误');}
+    e.target.value='';
+  };
+  reader.readAsText(file);
 }
 let config = { ...DEFAULT_CONFIG };
 let allImages = [];
