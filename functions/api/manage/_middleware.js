@@ -84,11 +84,14 @@ async function authentication(context) {
     env: context.env,
     request: context.request,
     requiredPermission,
-    authScope: AUTH_SCOPE.ADMIN,
+    authScope: AUTH_SCOPE.EITHER,
   });
 
   if (!result.authorized) {
-    return UnauthorizedException('You need to login');
+    return new Response(JSON.stringify({ success: false, message: 'You need to login' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+    });
   }
 
   return context.next();
