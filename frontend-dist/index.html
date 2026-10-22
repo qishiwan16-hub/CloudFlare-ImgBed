@@ -4372,10 +4372,11 @@ function deleteSelectedApImgs(){
   gdShow({title:'删除图片',desc:'已选中 '+count+' 张图片',buttons:btns});
 }
 function bindApImgEvents(container){
+  const albumImgs=allAlbums[currentAlbumIdx]?.images||allImages;
   container.querySelectorAll('.ap-gimg[data-aidx]').forEach(item=>{
     item.addEventListener('click',(e)=>{
       if(apImgSelectMode){e.preventDefault();toggleApImgSelect(item);}
-      else{openLightbox(item.dataset.src);}
+      else{openLightbox(item.dataset.src, albumImgs);}
     });
   });
 }
@@ -4795,11 +4796,12 @@ function initLightbox(){
   // Card lightbox close
   document.getElementById('clbOverlay').addEventListener('click',(e)=>{if(e.target===document.getElementById('clbOverlay'))clbClose();});
 }
-function openLightbox(src){
-  const name=allImages.find(i=>i.src===src)?.name||src.split('/').pop()||'';
+function openLightbox(src, customList){
+  const list=customList||allImages;
+  const name=list.find(i=>i.src===src)?.name||src.split('/').pop()||'';
   // All file types go through the flip card
-  fcList=allImages;
-  fcIdx=allImages.findIndex(img=>img.src===src);
+  fcList=list;
+  fcIdx=list.findIndex(img=>img.src===src);
   if(fcIdx<0)fcIdx=0;
   fcUpdate();
   document.getElementById('fcContainer').classList.remove('flipped');
@@ -4828,7 +4830,7 @@ function fcUpdate(){
     let vid=document.getElementById('fcVideo');if(vid){vid.style.display='none';vid.pause();}
     let ficon=document.getElementById('fcFileIcon');
     if(!ficon){ficon=document.createElement('div');ficon.id='fcFileIcon';ficon.style.cssText='width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer';fcImgEl.parentNode.insertBefore(ficon,fcImgEl);}
-    ficon.style.display='';ficon.innerHTML='<div style="transform:scale(1.8);margin-bottom:16px">'+fileTypeIcon(img.name)+'</div><div style="font-size:13px;color:#888;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cleanFileName(img.name)+'</div><div style="font-size:11px;color:#aaa">点击图标打开文件</div>';
+    ficon.style.display='';ficon.innerHTML='<div style="transform:scale(3)">'+fileTypeIcon(img.name)+'</div>';
     ficon.onclick=()=>window.open(img.src,'_blank');
     document.getElementById('fcBackThumb').src='';
   }else{
