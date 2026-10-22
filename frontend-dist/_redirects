@@ -1,3 +1,2 @@
-# SPA routes for dashboard
-/dashboard    /dashboard.html  200
+# SPA routes for dashboard sub-pages only
 /dashboard/*  /dashboard.html  200
