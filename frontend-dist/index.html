@@ -1473,6 +1473,7 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
     <div class="comp-tabs">
       <button class="comp-tab active" onclick="switchToolTab('compress')" id="tabCompress">压缩 / 转换</button>
       <button class="comp-tab" onclick="switchToolTab('migrate')" id="tabMigrate">图床迁移</button>
+      <button class="comp-tab" onclick="switchToolTab('linkdownload')" id="tabLinkDownload">链接下载</button>
       <button class="comp-tab" onclick="switchToolTab('zipup')" id="tabZipup">解压上传</button>
     </div>
     <!-- TAB: 压缩 -->
@@ -1568,6 +1569,23 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
           </div>
         </div>
       </div>
+    </div>
+    <!-- TAB: 纯本地链接下载，不调用图床上传 API -->
+    <div class="comp-tab-content" id="tabContentLinkDownload" style="display:none">
+      <div class="comp-upload-area" onclick="document.getElementById('linkDownloadInput').click()">
+        <div style="font-size:14px;font-weight:600;color:#6a6a6a">选择包含图片链接的文本文件</div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">支持 TXT、MD、HTML、CSS、JSON 等；仅在浏览器本地处理</div>
+      </div>
+      <input type="file" id="linkDownloadInput" accept=".md,.html,.htm,.css,.json,.txt,.xml,.svg,.js,.jsx,.tsx,.ts,.vue,.yaml,.yml,.toml" style="display:none">
+      <div style="margin:12px 0;font-size:12px;color:#888">也可以直接粘贴链接（每行一个）：</div>
+      <textarea id="linkDownloadUrls" rows="6" placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.png" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #e5e0da;border-radius:10px;resize:vertical"></textarea>
+      <div id="linkDownloadInfo" style="padding:12px 0;font-size:12px;color:#777">尚未解析链接</div>
+      <div id="linkDownloadProgress" style="display:none;padding:8px 0;font-size:12px;color:#777"></div>
+      <div class="comp-actions">
+        <button class="comp-btn primary" id="linkDownloadStart" onclick="linkDownloadStart()">下载并打包 ZIP</button>
+        <button class="comp-btn" onclick="linkDownloadClear()">清空</button>
+      </div>
+      <div style="font-size:11px;color:#aaa;line-height:1.6;margin-top:8px">图片由浏览器直接从来源地址获取，不经过图床上传接口。来源不允许跨域时会失败；ZIP 内会附带失败清单 TXT。</div>
     </div>
     <!-- TAB: 解压上传 -->
     <div class="comp-tab-content" id="tabContentZipup" style="display:none">
@@ -2636,11 +2654,84 @@ function compDownloadAll(){
 // ===== TAB SWITCHING =====
 function switchToolTab(tab){
   document.querySelectorAll('.comp-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(tab==='compress'?'tabCompress':tab==='migrate'?'tabMigrate':'tabZipup').classList.add('active');
+  const tabIds={compress:'tabCompress',migrate:'tabMigrate',linkdownload:'tabLinkDownload',zipup:'tabZipup'};
+  document.getElementById(tabIds[tab]||'tabCompress').classList.add('active');
   document.getElementById('tabContentCompress').style.display=tab==='compress'?'':'none';
   document.getElementById('tabContentMigrate').style.display=tab==='migrate'?'':'none';
+  document.getElementById('tabContentLinkDownload').style.display=tab==='linkdownload'?'':'none';
   document.getElementById('tabContentZipup').style.display=tab==='zipup'?'':'none';
 }
+// ===== LOCAL LINK DOWNLOADER (no image upload API) =====
+let _linkDownloadFileName='图片链接';
+document.getElementById('linkDownloadInput').addEventListener('change',async e=>{
+  const file=e.target.files?.[0];
+  if(!file)return;
+  _linkDownloadFileName=file.name.replace(/\.[^.]+$/,'')||'图片链接';
+  try{document.getElementById('linkDownloadUrls').value=await file.text();linkDownloadUpdateInfo();}
+  catch(err){showToast('读取文件失败: '+err.message);}
+  e.target.value='';
+});
+document.getElementById('linkDownloadUrls').addEventListener('input',linkDownloadUpdateInfo);
+function linkDownloadExtract(){
+  const text=document.getElementById('linkDownloadUrls').value;
+  const urls=text.match(/https?:\/\/[^\s"'<>\])}]+/gi)||[];
+  return [...new Set(urls.map(u=>u.replace(/[),.;]+$/,'')))];
+}
+function linkDownloadUpdateInfo(){
+  document.getElementById('linkDownloadInfo').textContent='识别到 '+linkDownloadExtract().length+' 个不同链接';
+}
+function linkDownloadSafeName(url,index,contentType){
+  try{
+    const u=new URL(url), raw=decodeURIComponent(u.pathname.split('/').pop()||'');
+    let name=raw&&raw.includes('.')?raw:'';
+    if(!name){const ext=(contentType||'').split('/')[1]?.split(';')[0]?.replace('jpeg','jpg')||'bin';name='image-'+String(index).padStart(3,'0')+'.'+ext;}
+    return name.replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0,180)||('image-'+index+'.bin');
+  }catch{return 'image-'+String(index).padStart(3,'0')+'.bin';}
+}
+async function linkDownloadStart(){
+  const urls=linkDownloadExtract();
+  if(!urls.length){showToast('没有识别到图片链接');return;}
+  const btn=document.getElementById('linkDownloadStart'), progress=document.getElementById('linkDownloadProgress');
+  btn.disabled=true;progress.style.display='';
+  const zip=new JSZip(), failures=[], usedNames=new Set();
+  for(let i=0;i<urls.length;i++){
+    progress.textContent='正在直接下载 '+(i+1)+' / '+urls.length+'…';
+    const url=urls[i];
+    try{
+      const res=await fetch(url,{mode:'cors',credentials:'omit'});
+      if(!res.ok)throw new Error('HTTP '+res.status+' '+res.statusText);
+      const blob=await res.blob();
+      if(!blob.size)throw new Error('响应文件为空');
+      let name=linkDownloadSafeName(url,i+1,res.headers.get('Content-Type')||blob.type);
+      const dot=name.lastIndexOf('.'), stem=dot>0?name.slice(0,dot):name, ext=dot>0?name.slice(dot):'';
+      let candidate=name,n=2;while(usedNames.has(candidate.toLowerCase()))candidate=stem+'_'+n+++ext;
+      usedNames.add(candidate.toLowerCase());zip.file(candidate,blob);
+    }catch(err){
+      let reason=err.message||'下载失败';
+      if(err instanceof TypeError||/failed to fetch|networkerror/i.test(reason))reason='网络请求失败：可能是来源站不允许跨域（CORS）、链接失效或网络不可达';
+      failures.push('第 '+(i+1)+' 个链接下载失败\n原因：'+reason+'\n链接：'+url);
+    }
+  }
+  if(failures.length)zip.file('下载失败清单.txt','图片链接批量下载失败清单\n生成时间：'+new Date().toLocaleString()+'\n失败数量：'+failures.length+' / '+urls.length+'\n\n'+failures.join('\n\n')+'\n');
+  if(Object.keys(zip.files).length){
+    progress.textContent='正在生成 ZIP…';
+    try{
+      const blob=await zip.generateAsync({type:'blob'});
+      const stamp=new Date().toISOString().replace(/[-:T.Z]/g,'').slice(0,14);
+      const a=document.createElement('a'), objectUrl=URL.createObjectURL(blob);
+      a.href=objectUrl;a.download=_linkDownloadFileName+'_'+stamp+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+      showToast('完成：成功 '+(urls.length-failures.length)+' 个，失败 '+failures.length+' 个');
+    }catch(err){showToast('生成 ZIP 失败: '+err.message);}
+  }else showToast('全部下载失败，未生成 ZIP');
+  progress.style.display='none';btn.disabled=false;
+}
+function linkDownloadClear(){
+  document.getElementById('linkDownloadUrls').value='';
+  document.getElementById('linkDownloadInfo').textContent='尚未解析链接';
+  document.getElementById('linkDownloadProgress').style.display='none';
+  _linkDownloadFileName='图片链接';
+}
+
 function openMigrator(){
   document.getElementById('compOverlay').classList.add('show');
   switchToolTab('migrate');
