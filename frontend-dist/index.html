@@ -593,21 +593,30 @@ body.dark .tool-entry{background:#2a2826;color:#aaa}
 /* Image Compressor */
 .comp-overlay{position:fixed;inset:0;background:#f8f6f3;z-index:240;display:none;flex-direction:column;overflow-y:auto}
 .comp-overlay.show{display:flex}
-.comp-tabs{display:flex;gap:0;padding:0 16px;border-bottom:1.5px solid #e8e4df}
-.comp-tab{flex:1;padding:10px 0;background:none;border:none;font-size:13px;font-weight:600;color:#999;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
-.comp-tab.active{color:#2c2c2c;border-bottom-color:#2c2c2c}
-body.dark .comp-tabs{border-bottom-color:#333}
-body.dark .comp-tab.active{color:#e8e4df;border-bottom-color:#e8e4df}
-body.dark .comp-tab{color:#666}
+.comp-tabs{display:flex;gap:4px;padding:5px;background:#eeedeb;border:1px solid #e2e0dd;border-radius:15px;margin:8px 0 20px;overflow-x:auto;scrollbar-width:none}
+.comp-tabs::-webkit-scrollbar{display:none}
+.comp-tab{flex:1;min-width:86px;padding:12px 10px;background:none;border:none;border-radius:11px;font-size:13px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;transition:all .2s}
+.comp-tab.active{background:#242424;color:#fff;box-shadow:0 2px 5px #0002}
+body.dark .comp-tabs{background:#282624;border-color:#393633}
+body.dark .comp-tab.active{background:#e8e4df;color:#222}
+body.dark .comp-tab{color:#999}
 .comp-tab-content{flex:1;display:flex;flex-direction:column;overflow-y:auto}
 body.dark .comp-overlay{background:#1a1a1a}
-.comp-panel{max-width:460px;width:100%;margin:0 auto;padding:0 16px}
+.comp-panel{max-width:640px;width:100%;box-sizing:border-box;margin:0 auto;padding:0 18px 28px}
+.comp-config{padding:16px;background:#ffffffa0;border:1px solid #e8e4df;border-radius:18px}
+.tool-note{font-size:12px;color:#888;line-height:1.7;margin:12px 0}
+.tool-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;background:#fff;border:1px solid #e8e4df;border-radius:16px;margin:14px 0}
+.tool-options .comp-field{margin:0}
+.tool-options[hidden]{display:none}
+.comp-btn:disabled{opacity:.5;cursor:wait}
+body.dark .comp-config,body.dark .tool-options{background:#242220;border-color:#393633}
+@media(max-width:380px){.tool-options{grid-template-columns:1fr}.comp-actions{flex-wrap:wrap}.comp-btn{min-width:90px}}
 .comp-header{display:flex;align-items:center;justify-content:space-between;padding:14px 0;position:sticky;top:0;background:inherit;z-index:2}
 .comp-back{background:none;border:none;cursor:pointer;color:#666;padding:4px}
 body.dark .comp-back{color:#aaa}
 .comp-title{font-size:15px;font-weight:700;color:#2c2c2c}
 body.dark .comp-title{color:#e8e4df}
-.comp-upload-area{border:2px dashed #e0dbd5;border-radius:16px;padding:40px 24px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .25s;margin-bottom:16px}
+.comp-upload-area{border:1.5px dashed #d8d3cd;border-radius:20px;padding:36px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;background:linear-gradient(145deg,#ffffff80,#f0ede750);cursor:pointer;transition:all .25s;margin-bottom:16px;gap:5px}
 .comp-upload-area:active{border-color:#a09488;background:#f0ede8}
 body.dark .comp-upload-area{border-color:#3a3632}
 .comp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
@@ -1480,10 +1489,11 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
     <div class="comp-tab-content" id="tabContentCompress">
     <div class="comp-upload-area" id="compUploadArea" onclick="document.getElementById('compFileInput').click()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="36" height="36" style="opacity:.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      <div style="font-size:14px;font-weight:600;color:#6a6a6a;margin-top:8px">选择图片</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px">支持 JPG、PNG、WebP、AVIF、GIF</div>
+      <div style="font-size:14px;font-weight:600;color:#6a6a6a;margin-top:8px">选择图片或 ZIP</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">批量转换 · 保留名称 · 本地处理</div>
     </div>
-    <input type="file" id="compFileInput" accept="image/*" multiple style="display:none">
+    <input type="file" id="compFileInput" accept="image/*,.zip,application/zip" multiple style="display:none">
+    <p class="tool-note">ZIP 会保留目录和全部文件，只转换支持的图片。文件名主体保持不变，后缀随目标格式更新。动图转换后为静态图片。</p>
     <div class="comp-config" id="compConfig" style="display:none">
       <div class="comp-stats" id="compStats">
         <div class="comp-stat"><div class="comp-stat-label">FILES</div><div class="comp-stat-num" id="compFileCount">0</div></div>
@@ -1609,6 +1619,11 @@ body.dark .fc-copy-panel-btn{background:#e8e4df;color:#1a1a1a}
             </div>
           </div>
         </div>
+        <div class="tool-options">
+          <div class="comp-field"><label for="zipupMode">上传方式</label><select id="zipupMode"><option value="files">解压后逐张上传图片</option><option value="zip">重新打包为 ZIP 上传</option></select></div>
+          <div class="comp-field"><label for="zipupFormat">上传前转换</label><select id="zipupFormat"><option value="">保持原内容</option><option value="webp">WebP</option><option value="jpeg">JPEG</option><option value="png">PNG</option></select></div>
+        </div>
+        <p class="tool-note">转换在浏览器完成，文件名主体不变、后缀随格式更新；重新打包时保留目录和其他文件，ZIP 沿用原名。动图转换后为静态图片。</p>
         <div id="zipupList" style="max-height:260px;overflow-y:auto;border-radius:12px;background:#faf8f6;border:1px solid #ece8e3"></div>
         <div id="zipupProgress" style="display:none;margin:12px 0">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:4px"><span id="zipupProgressText">上传中...</span><span id="zipupProgressNum">0/0</span></div>
@@ -2503,7 +2518,22 @@ function initSettings(){
   });
 }
 // ===== IMAGE COMPRESSOR =====
-let compFiles=[],compResults=[];
+let compFiles=[],compResults=[],compArchives=[],compBusy=false;
+let compPreviewUrls=[];
+function toolConvertedName(name,mime){
+  const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif'}[mime];
+  return ext?name.replace(/\.[^./]+$/,'')+'.'+ext:name;
+}
+function toolValidatePaths(paths){
+  const seen=new Set();
+  for(const path of paths){if(seen.has(path))throw new Error('转换后文件重名：'+path+'，请调整格式或原文件名');seen.add(path);}
+}
+const TOOL_IMAGE_MIMES={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',avif:'image/avif',gif:'image/gif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tif:'image/tiff',tiff:'image/tiff'};
+function toolDownload(blob,name){
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
 function openCompressor(){
   document.getElementById('compOverlay').classList.add('show');
   switchToolTab('compress');
@@ -2511,7 +2541,9 @@ function openCompressor(){
 }
 function closeCompressor(){document.getElementById('compOverlay').classList.remove('show');}
 function compClear(){
-  compFiles=[];compResults=[];
+  if(compBusy)return;
+  compFiles=[];compResults=[];compArchives=[];
+  compPreviewUrls.forEach(url=>URL.revokeObjectURL(url));compPreviewUrls=[];
   document.getElementById('compConfig').style.display='none';
   document.getElementById('compList').innerHTML='';
   document.getElementById('compUploadArea').style.display='';
@@ -2534,10 +2566,26 @@ function compUpdateStats(){
     document.getElementById('compSaved').textContent=(pct>=0?'-':'')+Math.abs(pct)+'%';
   }else{document.getElementById('compSaved').textContent='--';}
 }
-document.getElementById('compFileInput').addEventListener('change',(e)=>{
-  const files=Array.from(e.target.files).filter(f=>f.type.startsWith('image/'));
-  if(!files.length)return;
-  compFiles.push(...files);
+document.getElementById('compFileInput').addEventListener('change',async(e)=>{
+  if(compBusy)return;
+  compBusy=true;
+  try{
+    for(const file of Array.from(e.target.files)){
+      if(/\.zip$/i.test(file.name)){
+        const zip=await JSZip.loadAsync(file),archive={zip,name:file.name};
+        compArchives.push(archive);
+        for(const entry of Object.values(zip.files)){
+          if(entry.dir)continue;
+          const mime=TOOL_IMAGE_MIMES[entry.name.split('.').pop().toLowerCase()];
+          if(!mime)continue;
+          const image=new File([await entry.async('blob')],entry.name.split('/').pop(),{type:mime});
+          image._archive=archive;image._archivePath=entry.name;compFiles.push(image);
+        }
+      }else if(file.type.startsWith('image/')||TOOL_IMAGE_MIMES[file.name.split('.').pop().toLowerCase()])compFiles.push(file);
+    }
+  }catch(err){showToast('读取失败：'+err.message);}
+  finally{compBusy=false;e.target.value='';}
+  if(!compFiles.length){showToast('没有可转换的图片');return;}
   compResults=new Array(compFiles.length).fill(null);
   document.getElementById('compConfig').style.display='';
   document.getElementById('compUploadArea').style.display='none';
@@ -2546,6 +2594,7 @@ document.getElementById('compFileInput').addEventListener('change',(e)=>{
   e.target.value='';
 });
 function compRenderList(){
+  compPreviewUrls.forEach(url=>URL.revokeObjectURL(url));compPreviewUrls=[];
   const list=document.getElementById('compList');
   const quality=parseInt(document.getElementById('compQuality').value)/100;
   const maxSizeVal=parseInt(document.getElementById('compMaxSize').value);
@@ -2564,7 +2613,8 @@ function compRenderList(){
     } else if(r){
       estHtml=`<div class="comp-item-preview-size">原始 ${compFormatSize(f.size)} → 实际 ${compFormatSize(r.size)}</div>`;
     }
-    return `<div class="comp-item"><div class="comp-item-thumb"><img src="${URL.createObjectURL(f)}" loading="lazy"></div><div class="comp-item-info"><div class="comp-item-name">${f.name}</div><div class="comp-item-size">${compFormatSize(f.size)}</div>${estHtml}${status}</div><div class="comp-item-actions">${r?`<button class="comp-item-btn" onclick="compDownloadOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载</button>`:''}<button class="comp-item-btn" onclick="compRemoveOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>删除</button></div></div>`;
+    const preview=URL.createObjectURL(f);compPreviewUrls.push(preview);
+    return `<div class="comp-item"><div class="comp-item-thumb"><img src="${preview}" loading="lazy"></div><div class="comp-item-info"><div class="comp-item-name">${escHtml(f._archivePath||f.name)}</div><div class="comp-item-size">${compFormatSize(f.size)}</div>${estHtml}${status}</div><div class="comp-item-actions">${r?`<button class="comp-item-btn" onclick="compDownloadOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>下载</button>`:''}<button class="comp-item-btn" onclick="compRemoveOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>删除</button></div></div>`;
   }).join('');
   // Update estimated total output
   compUpdateEstimatedStats();
@@ -2608,6 +2658,9 @@ function compUpdateEstimatedStats(){
   }
 }
 async function runCompress(){
+  if(compBusy)return;
+  compBusy=true;
+  document.querySelectorAll('#tabContentCompress button').forEach(b=>b.disabled=true);
   const fmt=document.getElementById('compFormat').value;
   const quality=parseInt(document.getElementById('compQuality').value)/100;
   const maxSize=parseInt(document.getElementById('compMaxSize').value);
@@ -2620,12 +2673,15 @@ async function runCompress(){
     }catch{compResults[i]=false;}
     compRenderList();compUpdateStats();
   }
-  showToast('压缩完成');
+  compBusy=false;
+  document.querySelectorAll('#tabContentCompress button').forEach(b=>b.disabled=false);
+  showToast('转换完成，失败 '+compResults.filter(r=>r===false).length+' 个');
 }
 function compressImage(file,opts){
   return new Promise((resolve,reject)=>{
-    const img=new Image();
+    const img=new Image(),objectUrl=URL.createObjectURL(file);
     img.onload=()=>{
+      URL.revokeObjectURL(objectUrl);
       let w=img.width,h=img.height;
       if(opts.maxSize&&Math.max(w,h)>opts.maxSize){
         const scale=opts.maxSize/Math.max(w,h);
@@ -2634,27 +2690,42 @@ function compressImage(file,opts){
       const cv=document.createElement('canvas');cv.width=w;cv.height=h;
       const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,w,h);
       cv.toBlob(blob=>{
-        if(blob)resolve(blob);else reject(new Error('toBlob failed'));
+        if(blob&&blob.type===opts.format)resolve(blob);else reject(new Error('浏览器不支持此输出格式'));
       },opts.format,opts.quality);
     };
-    img.onerror=()=>reject(new Error('load failed'));
-    img.src=URL.createObjectURL(file);
+    img.onerror=()=>{URL.revokeObjectURL(objectUrl);reject(new Error('图片解码失败'));};
+    img.src=objectUrl;
   });
 }
 function compDownloadOne(i){
   const r=compResults[i];if(!r)return;
-  const fmt=document.getElementById('compFormat').value;
-  const ext=fmt==='jpeg'?'jpg':fmt;
-  const name=compFiles[i].name.replace(/\.[^.]+$/,'')+'.'+ext;
-  const a=document.createElement('a');a.href=URL.createObjectURL(r);a.download=name;a.click();
+  toolDownload(r,toolConvertedName(compFiles[i].name,r.type));
 }
 function compRemoveOne(i){
+  if(compBusy)return;
   compFiles.splice(i,1);compResults.splice(i,1);
   if(!compFiles.length){compClear();return;}
   compRenderList();compUpdateStats();
 }
-function compDownloadAll(){
-  compResults.forEach((r,i)=>{if(r)compDownloadOne(i);});
+async function compDownloadAll(){
+  if(compBusy)return;
+  compBusy=true;
+  try{
+    for(const archive of compArchives){
+      // Clone the original archive: unrelated files and directory entries stay intact.
+      const zip=await JSZip.loadAsync(await archive.zip.generateAsync({type:'blob'}));
+      const converted=new Map();
+      compFiles.forEach((file,i)=>{if(file._archive===archive&&compResults[i])converted.set(file._archivePath,{path:toolConvertedName(file._archivePath,compResults[i].type),blob:compResults[i]});});
+      toolValidatePaths(Object.keys(zip.files).map(path=>converted.get(path)?.path||path));
+      for(const path of converted.keys())zip.remove(path);
+      for(const output of converted.values())zip.file(output.path,output.blob);
+      const output=await zip.generateAsync({type:'blob'});
+      toolDownload(output,archive.name);
+    }
+    compResults.forEach((r,i)=>{if(r&&!compFiles[i]._archive)compDownloadOne(i);});
+    if(!compResults.some(Boolean))showToast('尚无转换结果，ZIP 保留原内容');
+  }catch(err){showToast('打包失败：'+err.message);}
+  finally{compBusy=false;}
 }
 
 // ===== TAB SWITCHING =====
@@ -3022,13 +3093,16 @@ function migrateClear(){
   closeMigrateLinks();
 }
 // ===== ZIP EXTRACT & UPLOAD =====
-let _zipupFiles=[],_zipupName='';
+let _zipupFiles=[],_zipupName='',_zipupArchive=null,_zipupOriginalName='',_zipupBusy=false;
 document.getElementById('zipupFileInput').addEventListener('change',async(e)=>{
-  const f=e.target.files[0];if(!f)return;
+  const f=e.target.files[0];if(!f||_zipupBusy)return;
   try{
     showToast('正在解压...');
+    zipupClear();
+    _zipupOriginalName=f.name;
     const zip=await JSZip.loadAsync(f);
-    const imgExts=['png','jpg','jpeg','gif','webp','avif','bmp','svg','ico','tiff'];
+    _zipupArchive=zip;
+    const imgExts=Object.keys(TOOL_IMAGE_MIMES);
     const entries=[];
     zip.forEach((path,entry)=>{if(entry.dir)return;const ext=path.split('.').pop().toLowerCase();if(imgExts.includes(ext))entries.push({path,entry});});
     entries.sort((a,b)=>a.path.localeCompare(b.path));
@@ -3038,7 +3112,7 @@ document.getElementById('zipupFileInput').addEventListener('change',async(e)=>{
       const name=path.split('/').pop();
       const ext=name.split('.').pop().toLowerCase();
       const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',avif:'image/avif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tiff:'image/tiff'};
-      _zipupFiles.push({file:new File([blob],name,{type:mimeMap[ext]||'image/png'}),url:URL.createObjectURL(blob),status:'pending',result:null});
+      _zipupFiles.push({path,file:new File([blob],name,{type:mimeMap[ext]||TOOL_IMAGE_MIMES[ext]}),url:URL.createObjectURL(blob),status:'pending',result:null});
     }
     _zipupName=cleanFileName(f.name).replace(/\.[^.]+$/,'');
     document.getElementById('zipupFileName').textContent=cleanFileName(f.name);
@@ -3048,7 +3122,7 @@ document.getElementById('zipupFileInput').addEventListener('change',async(e)=>{
     zipupRenderList();
     document.getElementById('zipupUploadArea').style.display='none';
     document.getElementById('zipupContent').style.display='';
-    document.getElementById('zipupResults').style.display='none';
+    const resultPanel=document.getElementById('zipupResults');if(resultPanel)resultPanel.style.display='none';
     document.getElementById('zipupProgress').style.display='none';
   }catch(err){showToast('解压失败: '+err.message);}
   e.target.value='';
@@ -3063,15 +3137,49 @@ function zipupRenderList(){
     '</div>').join('');
 }
 async function zipupStart(){
+  if(_zipupBusy)return;
   if(!_zipupFiles.length){showToast('没有图片');return;}
+  _zipupBusy=true;
+  try{
+    document.getElementById('zipupStartBtn').disabled=true;
+    const format=document.getElementById('zipupFormat').value;
+    const files=[];
+    for(const item of _zipupFiles){
+      const blob=format?await compressImage(item.file,{format:'image/'+format,quality:.85,maxSize:0}):item.file;
+      files.push({...item,path:format?toolConvertedName(item.path,blob.type):item.path,file:new File([blob],format?toolConvertedName(item.file.name,blob.type):item.file.name,{type:blob.type})});
+    }
+    if(document.getElementById('zipupMode').value==='zip'){
+      const zip=await JSZip.loadAsync(await _zipupArchive.generateAsync({type:'blob'}));
+      const replacements=new Map(_zipupFiles.map((item,i)=>[item.path,files[i]]));
+      toolValidatePaths(Object.keys(zip.files).map(path=>replacements.get(path)?.path||path));
+      for(const path of replacements.keys())zip.remove(path);
+      files.forEach(item=>zip.file(item.path,item.file));
+      const blob=await zip.generateAsync({type:'blob'});
+      const fd=new FormData();fd.append('file',new File([blob],_zipupOriginalName,{type:'application/zip'}));
+      const response=await fetch(API.upload,{method:'POST',body:fd,credentials:'include'});
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      const data=await response.json();
+      if(!data?.[0]?.src)throw new Error('上传响应无效');
+      const {src,aliases}=data[0],fullUrl=new URL(src,location.origin).href;
+      allImages.unshift({src:fullUrl,name:_zipupOriginalName,size:blob.size,date:new Date().toLocaleDateString('zh-CN'),aliases});
+      saveUserImages();updateHomeStats();renderHomeGallery();renderHomeAlbums();
+      showResults([{name:_zipupOriginalName,src,fullUrl,aliases}]);showToast('ZIP 上传完成');
+    }else{
+      // Keep original entries untouched so retries never recompress already converted bytes.
+      await zipupUploadImages(files);
+    }
+  }catch(err){showToast('处理失败：'+err.message);}
+  finally{_zipupBusy=false;document.getElementById('zipupStartBtn').disabled=false;document.getElementById('zipupStartBtn').textContent='一键上传';document.getElementById('zipupProgress').style.display='none';}
+}
+async function zipupUploadImages(files){
   const btn=document.getElementById('zipupStartBtn');
   btn.disabled=true;btn.textContent='上传中...';
   const prog=document.getElementById('zipupProgress');
   prog.style.display='';
   const results=[];
-  const total=_zipupFiles.length;
+  const total=files.length;
   for(let i=0;i<total;i++){
-    const zf=_zipupFiles[i];
+    const zf=files[i];
     document.getElementById('zipupProgressText').textContent='上传 '+(i+1)+'/'+total;
     document.getElementById('zipupProgressNum').textContent=(i+1)+'/'+total;
     document.getElementById('zipupProgressBar').style.width=((i+1)/total*100)+'%';
@@ -3082,9 +3190,9 @@ async function zipupStart(){
       const data=await resp.json();
       if(Array.isArray(data)&&data[0]&&data[0].src){
         const src=data[0].src,fullUrl=location.origin+src,al=data[0].aliases||null;
-        zf.status='done';zf.result={name:cleanFileName(zf.file.name),src,fullUrl,aliases:al};
+        zf.status='done';zf.result={name:zf.file.name,src,fullUrl,aliases:al};
         results.push(zf.result);
-        allImages.unshift({src:fullUrl,name:cleanFileName(zf.file.name),date:new Date().toLocaleDateString('zh-CN'),size:zf.file.size||0,aliases:al});
+        allImages.unshift({src:fullUrl,name:zf.file.name,date:new Date().toLocaleDateString('zh-CN'),size:zf.file.size||0,aliases:al});
       }else throw new Error('Bad response');
     }catch(e){zf.status='error';}
     const st=document.getElementById('zipupSt_'+i);
@@ -3108,6 +3216,8 @@ async function zipupStart(){
   showToast('上传完成: '+results.length+'/'+total);
 }
 function zipupClear(){
+  if(_zipupBusy)return;
+  _zipupArchive=null;_zipupOriginalName='';
   _zipupFiles.forEach(zf=>{if(zf.url)URL.revokeObjectURL(zf.url);});
   _zipupFiles=[];_zipupName='';
   document.getElementById('zipupUploadArea').style.display='';
