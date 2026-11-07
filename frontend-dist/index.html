@@ -2524,9 +2524,19 @@ function toolConvertedName(name,mime){
   const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif'}[mime];
   return ext?name.replace(/\.[^./]+$/,'')+'.'+ext:name;
 }
-function toolValidatePaths(paths){
-  const seen=new Set();
-  for(const path of paths){if(seen.has(path))throw new Error('转换后文件重名：'+path+'，请调整格式或原文件名');seen.add(path);}
+function toolResolveConvertedPaths(originalPaths,converted){
+  const counts=new Map(),used=new Set();
+  for(const path of originalPaths){const target=converted.get(path)?.path||path;counts.set(target,(counts.get(target)||0)+1);if(!converted.has(path))used.add(path);}
+  const resolved=new Set();
+  for(const [source,item] of converted){if(counts.get(item.path)===1&&!used.has(item.path)){used.add(item.path);resolved.add(source);}}
+  for(const [source,item] of converted){
+    if(resolved.has(source))continue;
+    const ext=source.match(/\.([^./]+)$/)?.[1]||'原文件';
+    const dot=item.path.lastIndexOf('.'),stem=item.path.slice(0,dot),suffix=item.path.slice(dot);
+    let target=stem+'（'+ext+'）'+suffix,n=2;
+    while(used.has(target))target=stem+'（'+ext+'-'+n+++'）'+suffix;
+    item.path=target;used.add(target);
+  }
 }
 const TOOL_IMAGE_MIMES={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',avif:'image/avif',gif:'image/gif',bmp:'image/bmp',svg:'image/svg+xml',ico:'image/x-icon',tif:'image/tiff',tiff:'image/tiff'};
 function toolDownload(blob,name){
@@ -2699,7 +2709,11 @@ function compressImage(file,opts){
 }
 function compDownloadOne(i){
   const r=compResults[i];if(!r)return;
-  toolDownload(r,toolConvertedName(compFiles[i].name,r.type));
+  const entries=compFiles.map((file,index)=>({path:toolConvertedName(file.name,compResults[index]?.type||r.type)}));
+  const originals=compFiles.map((file,index)=>index+'/'+file.name);
+  const mapped=new Map(entries.map((entry,index)=>[originals[index],entry]));
+  toolResolveConvertedPaths(originals,mapped);
+  toolDownload(r,entries[i].path);
 }
 function compRemoveOne(i){
   if(compBusy)return;
@@ -2716,7 +2730,7 @@ async function compDownloadAll(){
       const zip=await JSZip.loadAsync(await archive.zip.generateAsync({type:'blob'}));
       const converted=new Map();
       compFiles.forEach((file,i)=>{if(file._archive===archive&&compResults[i])converted.set(file._archivePath,{path:toolConvertedName(file._archivePath,compResults[i].type),blob:compResults[i]});});
-      toolValidatePaths(Object.keys(zip.files).map(path=>converted.get(path)?.path||path));
+      toolResolveConvertedPaths(Object.keys(zip.files),converted);
       for(const path of converted.keys())zip.remove(path);
       for(const output of converted.values())zip.file(output.path,output.blob);
       const output=await zip.generateAsync({type:'blob'});
@@ -3151,7 +3165,8 @@ async function zipupStart(){
     if(document.getElementById('zipupMode').value==='zip'){
       const zip=await JSZip.loadAsync(await _zipupArchive.generateAsync({type:'blob'}));
       const replacements=new Map(_zipupFiles.map((item,i)=>[item.path,files[i]]));
-      toolValidatePaths(Object.keys(zip.files).map(path=>replacements.get(path)?.path||path));
+      toolResolveConvertedPaths(Object.keys(zip.files),replacements);
+      files.forEach(item=>{item.file=new File([item.file],item.path.split('/').pop(),{type:item.file.type});});
       for(const path of replacements.keys())zip.remove(path);
       files.forEach(item=>zip.file(item.path,item.file));
       const blob=await zip.generateAsync({type:'blob'});
@@ -3165,6 +3180,9 @@ async function zipupStart(){
       saveUserImages();updateHomeStats();renderHomeGallery();renderHomeAlbums();
       showResults([{name:_zipupOriginalName,src,fullUrl,aliases}]);showToast('ZIP 上传完成');
     }else{
+      const names=new Map(_zipupFiles.map((item,i)=>[i+'/'+item.file.name,{path:files[i].file.name}]));
+      toolResolveConvertedPaths([...names.keys()],names);
+      [...names.values()].forEach((entry,i)=>{files[i].file=new File([files[i].file],entry.path,{type:files[i].file.type});});
       // Keep original entries untouched so retries never recompress already converted bytes.
       await zipupUploadImages(files);
     }
